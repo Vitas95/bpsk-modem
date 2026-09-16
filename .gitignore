@@ -1,0 +1,16 @@
+# Ignore ModelSim generated files and directories
+script/work/*
+[_@]*
+modelsim.ini
+
+# Ignore simulation output of Modelsim
+wlf*
+*.wlf
+*.vstf
+*.ucdb
+conv*/
+transcript*
+sc_dpiheader.h
+vsim.dbg
+*.bak
+*.f
