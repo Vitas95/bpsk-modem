@@ -8,7 +8,7 @@
 // FSM:
 //   IDLE         -- rx_en --> RX_ACTIVE
 //   RX_ACTIVE    -- bist_start (deframer_en activates) --> BIST_ARMED          
-//   BIST_ARMED   -- (bist_en pulses here) --> BIST_ACTIVE
+//   BIST_ARMED   -- (bist_en enable here) --> BIST_ACTIVE
 //   BIST_ACTIVE  -- last bist packet done or watchdog timer went off --> BIST_DONE
 //   BIST_DONE    -- (bist_done pulses here) --> RX_ACTIVE
 //   RX_ACTIVE    -- (!rx_en) --> IDLE   
@@ -59,22 +59,22 @@ always_comb begin
             if (rx_ctrl.rx_en)  next_state = RX_ACTIVE;
 
         RX_ACTIVE:
-            if      (!rx_ctrl.rx_en)           next_state = IDLE;     
+            if      (!rx_ctrl.rx_en)   next_state = IDLE;     
             else if (bist_start_pulse) next_state = BIST_ARMED;
 
         BIST_ARMED:
-            if      (!rx_ctrl.rx_en)            next_state = IDLE;
+            if      (!rx_ctrl.rx_en) next_state = IDLE;
             // Switch to BIST only when deframer is available
             else if (!deframer_busy) next_state = BIST_ACTIVE;
 
         BIST_ACTIVE:
-            if      (!rx_ctrl.rx_en)        next_state = IDLE;
+            if      (!rx_ctrl.rx_en) next_state = IDLE;
             // Exit from the mode if we finished or if wtchdog timer went off
-            else if (bist_run_done) next_state = BIST_DONE;
+            else if (bist_run_done)  next_state = BIST_DONE;
         
         BIST_DONE:
             if (!rx_ctrl.rx_en) next_state = IDLE;
-            else        next_state = RX_ACTIVE;
+            else                next_state = RX_ACTIVE;
         
         default:  next_state = IDLE;
     endcase

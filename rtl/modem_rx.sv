@@ -17,21 +17,26 @@ axis_if #(.DATA_WIDTH(1), .HAS_READY(1)) prbs_if();
 logic [HEADER_LEN-1 : 0]     received_header;
 logic [$clog2(DATA_LEN)-1:0] bist_pkt_bit_err;
 
+logic [FRAME_CNT_LEN-1:0] packet_num; 
+logic                     packet_num_valid;
+
 ///////////////////
 // Baseband part //
 ///////////////////
 
-prbs_gen #(
-	.SEED(PRBS_SEED)
-) prbs_gen_inst (
+prbs_gen prbs_gen_inst (
     .clk(clk),
     .rst(rst),
+
+    .seed(packet_num),
+    .seed_valid(packet_num_valid),
 
     .gen_out(prbs_if)
 );
 
 deframer #(
     .HEADER_LEN(HEADER_LEN),
+    .FRAME_CNT_LEN(FRAME_CNT_LEN),
     .DATA_LEN(DATA_LEN),
     .CRC_LEN(CRC_LEN),
     .BARKER(BARKER),
@@ -43,6 +48,10 @@ deframer #(
     .s_axis_samples(rx_signal),
     .s_axis_prbs(prbs_if),
     .m_axis(rx_data),
+
+    // PRSB control
+    .packet_num(packet_num),
+    .packet_num_valid(packet_num_valid),
 
     // Control ports
     .deframer_en(deframer_en),

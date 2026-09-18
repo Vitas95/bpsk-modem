@@ -6,14 +6,15 @@ package bpsk_modem_pkg;
     localparam int DATA_WIDTH = 1;
     
     // Frame parameter
-    //+----------------------------+---------+----------------+-----+--------------+
-    //| Preamble (Sync + Barker13) | Header  | Payload (Data) | CRC | Tail (zeros) |
-    //+----------------------------+---------+----------------+-----+--------------+
-    localparam SYNC_LEN     = 64 - 13; // WO taking into account Barker frame marker
-    localparam HEADER_LEN   = 8;       // Internal modem data
-    localparam DATA_LEN     = 1024;    // Transmited data
-    localparam CRC_LEN      = 8;       // CRC8 
-    localparam FRAME_LEN    = SYNC_LEN + 13 + HEADER_LEN + DATA_LEN + CRC_LEN;
+    //+----------------------------+---------+---------------+----------------+-----+--------------+
+    //| Preamble (Sync + Barker13) | Header  | Frame counter | Payload (Data) | CRC | Tail (zeros) |
+    //+----------------------------+---------+---------------+----------------+-----+--------------+
+    localparam SYNC_LEN       = 64 - 13; // WO taking into account Barker frame marker
+    localparam HEADER_LEN     = 8;       // Internal modem data
+    localparam FRAME_CNT_LEN  = 8;       // Frame counter
+    localparam DATA_LEN       = 1024;    // Transmited data
+    localparam CRC_LEN        = 8;       // CRC8 
+    localparam FRAME_LEN      = SYNC_LEN + 13 + HEADER_LEN + FRAME_CNT_LEN + DATA_LEN + CRC_LEN;
 
     localparam logic [12:0] BARKER    = 13'b1_1111_0011_0101;
     localparam logic [7:0]  PRBS_SEED = 8'd128;
@@ -31,7 +32,7 @@ package bpsk_modem_pkg;
     2, -12, -4, 26, 78, 128, 150
     };
 
-    localparam CIC_R = 20;  // Upsampling factor
+    localparam CIC_R = 20;  // Upsampling factor, must be greater than 2!
     localparam CIC_N = 4;   // Number of stages
     localparam CIC_D = 1;   // Differential delay
 

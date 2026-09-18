@@ -6,7 +6,7 @@ import bpsk_modem_pkg::*;
     
 parameter   CLK_PERIOD = 12.5;   // 80 MHz clock
 
-bit clk, rst, tx_en;
+bit clk, rst, packet_start;
 always #(CLK_PERIOD/2) clk = ~clk;
 
 axis_if #(.DATA_WIDTH(1), .FRACT_WIDTH(0), .HAS_READY(1)) data_out();
@@ -16,6 +16,7 @@ axis_if #(.DATA_WIDTH(1), .FRACT_WIDTH(0), .HAS_READY(1)) prbs_in();
 framer #(
     .SYNC_LEN(SYNC_LEN),
     .HEADER_LEN(HEADER_LEN),
+    .FRAME_CNT_LEN(FRAME_CNT_LEN),
     .DATA_LEN(DATA_LEN),
     .CRC_LEN(CRC_LEN),
     .TAIL_LEN($size(FIR_COEFF) * 2),
@@ -31,7 +32,7 @@ framer #(
     .m_axis(data_out),
 
 
-    .tx_en(tx_en),
+    .packet_start(packet_start),
     .header_in(HEADER_DATA)
 );
 
@@ -52,11 +53,13 @@ initial begin
     #(4*CLK_PERIOD);
     rst <= 0;
     @(posedge clk);
-    tx_en <= 1;
+    packet_start <= 1;
     data_out.master.ready <= 1;
+    #(CLK_PERIOD);
+    packet_start <= 0;
     #(128*CLK_PERIOD);
     @(posedge clk);
-    tx_en <= 0;
+    packet_start <= 0;
 end
 
 

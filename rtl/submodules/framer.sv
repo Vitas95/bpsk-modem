@@ -5,30 +5,31 @@
 //   Framer form the transmittion packet. The interfaces are 
 //	 AXI4-Stream compatible (with tready and tlast).
 //////////////////////////////////////////////////////////////////////////////////
-//                    +---------+
-//  Sync + Barker  ---+         |
-//                    |         |
-//         Header  ---+         |
-//                    |         |
-//  External data  ---+         | 
-//                    |   MUX   | -------> Ready frame for a Mapper
-//    PRBS (BIST)  ---+         |          (Ready/Valid interface)
-//                    |         |
-//            CRC  ---+         |
-//                    |         |
-//   Tail (zeros)  ---+         |
-//                    |         |
-//                    +---------+
-//                        /\
-//                        ||
-//                 +--------------+
-//                 | Control (FSM)| <=== Data from Tx Control state machine 
-//                 +--------------+
+//                        +---------+
+//      Sync + Barker  ---+         |
+//                        |         |
+// Header + frame cnt  ---+         |
+//                        |         |
+//      External data  ---+         | 
+//                        |   MUX   | -------> Ready frame for a Mapper
+//        PRBS (BIST)  ---+         |          (Ready/Valid interface)
+//                        |         |
+//                CRC  ---+         |
+//                        |         |
+//       Tail (zeros)  ---+         |
+//                        |         |
+//                        +---------+
+//                            /\
+//                            ||
+//                     +--------------+
+//                     | Control (FSM)| <=== Data from Tx Control state machine 
+//                     +--------------+
 //
 
 module framer #(
     parameter SYNC_LEN,
     parameter HEADER_LEN,
+    parameter FRAME_CNT_LEN,
     parameter DATA_LEN,
     parameter CRC_LEN,
     parameter TAIL_LEN,
@@ -44,9 +45,13 @@ module framer #(
     axis_if.slave  s_axis_prbs,
     axis_if.master m_axis,
 
+    // PRSB control
+    output [FRAME_CNT_LEN-1:0] packet_num, 
+    output                     packet_num_valid,
+
     // Control ports
-    input                        tx_en,
-    input logic [HEADER_LEN-1:0] header_in
+    input                        packet_start,  // pulse, start frame transmission
+    input logic [HEADER_LEN-1:0] header_in      // reg, current header value
 );
 
 // All data are single bit buses
@@ -58,15 +63,16 @@ module framer #(
 // State machine //
 ///////////////////
 typedef enum logic [2:0] { 
-    IDLE, PREAMBLE, HEADER, DATA, CRC, TAIL 
+    IDLE, PREAMBLE, HEADER, FRAME_CNT, DATA, CRC, TAIL 
 } state;
 state current_state;
 
-localparam PREAMBLE_END = SYNC_LEN + $bits(BARKER);
-localparam HEADER_END   = PREAMBLE_END + HEADER_LEN;
-localparam DATA_END     = HEADER_END + DATA_LEN;
-localparam CRC_END      = DATA_END + CRC_LEN;
-localparam FRAME_END    = CRC_END + TAIL_LEN; 
+localparam PREAMBLE_END  = SYNC_LEN + $bits(BARKER);
+localparam HEADER_END    = PREAMBLE_END + HEADER_LEN;
+localparam FRAME_CNT_END = HEADER_END + FRAME_CNT_LEN;
+localparam DATA_END      = FRAME_CNT_END + DATA_LEN;
+localparam CRC_END       = DATA_END + CRC_LEN;
+localparam FRAME_END     = CRC_END + TAIL_LEN; 
 
 logic [$clog2(CRC_END)-1:0]  sample_cnt;
 
@@ -79,17 +85,18 @@ assign advance  = m_axis.ready && m_axis.valid; // Data was transfered to the sl
 logic enable;
 always_ff @(posedge clk) begin
     if (rst || sample_cnt == FRAME_END - 1) enable <= 0;
-    else if (tx_en)                         enable <= 1;
+    else if (packet_start)                         enable <= 1;
 end
 
 always_comb begin
-    if      (!enable)                   current_state = IDLE;
-    else if (sample_cnt < PREAMBLE_END) current_state = PREAMBLE; 
-    else if (sample_cnt < HEADER_END)   current_state = HEADER; 
-    else if (sample_cnt < DATA_END)     current_state = DATA; 
-    else if (sample_cnt < CRC_END) 	    current_state = CRC;
-    else if (sample_cnt < FRAME_END)    current_state = TAIL;
-    else                                current_state = IDLE;
+    if      (!enable)                    current_state = IDLE;
+    else if (sample_cnt < PREAMBLE_END)  current_state = PREAMBLE; 
+    else if (sample_cnt < HEADER_END)    current_state = HEADER;
+    else if (sample_cnt < FRAME_CNT_END) current_state = FRAME_CNT;
+    else if (sample_cnt < DATA_END)      current_state = DATA; 
+    else if (sample_cnt < CRC_END) 	     current_state = CRC;
+    else if (sample_cnt < FRAME_END)     current_state = TAIL;
+    else                                 current_state = IDLE;
 end
 
 always_ff @(posedge clk) begin
@@ -123,11 +130,30 @@ always_ff @(posedge clk) begin
     if (rst || (current_state == IDLE)) 
         header <= header_in;
     else if (advance && (sample_cnt >= PREAMBLE_END) && (sample_cnt < HEADER_END))
-    
             header  <= {header[HEADER_LEN-2:0], header[HEADER_LEN-1]};
         else 
             header <= header;
 end
+
+///////////////////
+// Frame counter //
+///////////////////
+logic [FRAME_CNT_LEN-1:0] frame_counter;
+logic                     packet_num_ready;
+
+always_ff @(posedge clk) begin
+    if (rst)
+        frame_counter <= '0;
+    else if (packet_start)
+        frame_counter <= frame_counter + 1;
+    else if (advance && (current_state == FRAME_CNT))
+        frame_counter  <= {frame_counter[FRAME_CNT_LEN-2:0], frame_counter[FRAME_CNT_LEN-1]};
+end
+
+assign packet_num       = frame_counter;
+assign packet_num_ready = (sample_cnt == FRAME_CNT_END);
+posedge_gen posedge_gen_inst_0 (
+    .clk(clk), .in(packet_num_ready), .out(packet_num_valid));
 
 ////////////////////
 // CRC generation //
@@ -159,8 +185,9 @@ always_comb begin
     s_axis_prbs.ready = 1'b0;
 
     unique case (current_state)
-        PREAMBLE: m_axis.data = preamble;
-        HEADER:   m_axis.data = header[7];
+        PREAMBLE:   m_axis.data = preamble;
+        HEADER:     m_axis.data = header[7];
+        FRAME_CNT:  m_axis.data = frame_counter[7];
         
         DATA: begin
             if (header == HEADER_DATA) begin

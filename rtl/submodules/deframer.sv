@@ -24,6 +24,7 @@
 
 module deframer #(
     parameter HEADER_LEN,
+    parameter FRAME_CNT_LEN,
     parameter DATA_LEN,
     parameter CRC_LEN,
     parameter BARKER,
@@ -37,9 +38,13 @@ module deframer #(
     axis_if.slave  s_axis_prbs,
     axis_if.master m_axis,
 
+    // PRSB control
+    output [FRAME_CNT_LEN-1:0] packet_num, 
+    output                     packet_num_valid,
+
     // Control ports
-    input logic deframer_en,    // level
-    input logic bist_en,        // pulse
+    input logic deframer_en, // level
+    input logic bist_en,     // level
 
     // Output status ports
     output logic                        deframer_busy,      // level, deframer found a packet and it busy now
@@ -125,13 +130,14 @@ end
 // State machine //
 ///////////////////
 typedef enum logic [2:0] { 
-    IDLE, HEADER, DATA ,CRC
+    IDLE, HEADER, FRAME_CNT, DATA ,CRC
 } state;
 state current_state;
 
-localparam HEADER_END = HEADER_LEN;
-localparam DATA_END   = HEADER_END + DATA_LEN;
-localparam FRAME_END  = DATA_END   + CRC_LEN;
+localparam HEADER_END    = HEADER_LEN;
+localparam FRAME_CNT_END = HEADER_END + FRAME_CNT_LEN;
+localparam DATA_END      = FRAME_CNT_END + DATA_LEN;
+localparam FRAME_END     = DATA_END   + CRC_LEN;
 
 logic [$clog2(FRAME_END)-1:0]  sample_cnt;
 
@@ -145,11 +151,12 @@ end
 assign packet_finished = (sample_cnt == FRAME_END - 1) && rx_valid;
 
 always_comb begin
-    if      (!pkt_found)                current_state = IDLE;
-    else if (sample_cnt < HEADER_END)   current_state = HEADER; 
-    else if (sample_cnt < DATA_END)     current_state = DATA; 
-    else if (sample_cnt < FRAME_END) 	current_state = CRC;
-    else                                current_state = IDLE;
+    if      (!pkt_found)                 current_state = IDLE;
+    else if (sample_cnt < HEADER_END)    current_state = HEADER;
+    else if (sample_cnt < FRAME_CNT_END) current_state = FRAME_CNT;  
+    else if (sample_cnt < DATA_END)      current_state = DATA; 
+    else if (sample_cnt < FRAME_END) 	 current_state = CRC;
+    else                                 current_state = IDLE;
 end
 
 always_ff @( posedge clk ) begin
@@ -170,6 +177,24 @@ always_ff @(posedge clk) begin
     else if (current_state == HEADER && rx_valid)
         received_header <= {received_header[HEADER_LEN-2:0], rx_bit};
 end
+
+/////////////////////////////
+// Receiving frame counter //
+/////////////////////////////
+
+logic [FRAME_CNT_LEN-1:0] frame_counter;
+logic                     packet_num_ready;
+
+always_ff @(posedge clk) begin
+    if (rst) frame_counter <= 0;
+    else if (current_state == FRAME_CNT && rx_valid)
+        frame_counter <= {frame_counter[FRAME_CNT_LEN-2:0], rx_bit};
+end
+
+assign packet_num       = frame_counter;
+assign packet_num_ready = (sample_cnt == FRAME_CNT_END);
+posedge_gen posedge_gen_inst_0 (
+    .clk(clk), .in(packet_num_ready), .out(packet_num_valid));
 
 /////////////////////
 // CRC calculation //

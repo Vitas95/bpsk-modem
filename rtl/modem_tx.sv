@@ -24,12 +24,15 @@ axis_if #(.DATA_WIDTH(1), .HAS_READY(1)) framer_if();
 // Connections
 logic [7:0] header;
 logic       packet_start;
+logic [FRAME_CNT_LEN-1:0] packet_num; 
+logic                     packet_num_valid;
 
-prbs_gen #(
-	.SEED(PRBS_SEED)
-) prbs_gen_inst (
+prbs_gen prbs_gen_inst (
     .clk(clk),
     .rst(rst),
+
+    .seed(packet_num),
+	.seed_valid(packet_num_valid),
 
     .gen_out(prbs_if)
 );
@@ -37,6 +40,7 @@ prbs_gen #(
 framer #(
     .SYNC_LEN(SYNC_LEN),
     .HEADER_LEN(HEADER_LEN),
+    .FRAME_CNT_LEN(FRAME_CNT_LEN),
     .DATA_LEN(DATA_LEN),
     .CRC_LEN(CRC_LEN),
     .TAIL_LEN($size(FIR_COEFF) * 2),
@@ -52,7 +56,11 @@ framer #(
     .s_axis_prbs(prbs_if),
     .m_axis(framer_if),
 
-    .tx_en(packet_start),
+    // PRSB control
+    .packet_num(packet_num),
+    .packet_num_valid(packet_num_valid),
+
+    .packet_start(packet_start),
     .header_in(header)
 );
 
@@ -81,7 +89,7 @@ tx_control  #(
 //////////////
 
 mapper #(
-    .CLK_PER_SAMPLE(MAPPER_CLK_PER_SAMPLE)
+    .CLK_PER_SAMPLE(CIC_R)
 ) mapper_inst (
     .clk(clk),
     .rst(rst),

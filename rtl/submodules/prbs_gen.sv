@@ -4,13 +4,16 @@
 // Description:
 //   Random data generator based on an 8-bit LFSR (Linear Feedback Shift Register).
 //   The sequence is pseudo-random and repeats cyclically. The interface is 
-//	 AXI4-Stream compatible (with tready and tlast).
+//	 AXI4-Stream compatible (with tready and tlast). Seed is now set from outside 
+//   the module.
 //////////////////////////////////////////////////////////////////////////////////
-module prbs_gen #(
-	parameter SEED
-)(
-    input	clk,
-    input 	rst,
+module prbs_gen (
+    input logic	clk,
+    input logic	rst,
+
+	// Setup ports
+	input logic [7:0] seed,
+	input logic 	  seed_valid,
 
     axis_if.master	gen_out
 );
@@ -23,9 +26,12 @@ assign 		advance = gen_out.valid && gen_out.ready;
 
 // Main logic
 always_ff @(posedge clk) begin
-	if (rst) begin 
-		shift_reg	  <= SEED;
+	if (rst || seed_valid) begin 
 		gen_out.valid <=  0;
+		if (seed == 0)	// PRSB will not work wit seed equal 0
+			shift_reg	<= 1;
+		else
+			shift_reg	<= seed;		
 	end else begin 
 		gen_out.valid <= 1;
 		

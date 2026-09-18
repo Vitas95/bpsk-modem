@@ -19,11 +19,13 @@ add wave -group MODEM_CONTROL sim:/$obj/*
 set obj modem_core_tb/dut/modem_tx_inst
 add wave -group MODEM_TX sim:/$obj/*
 add wave -group MODEM_TX sim:/$obj/tx_control_inst/*
+add wave -group MODEM_TX_PRBS sim:/$obj/prbs_gen_inst/*
 
 # MODEM RX
 set obj modem_core_tb/dut/modem_rx_inst
 add wave -group MODEM_RX sim:/$obj/*
 add wave -group MODEM_RX sim:/$obj/rx_control_inst/*
+add wave -group MODEM_RX_PRBS sim:/$obj/prbs_gen_inst/*
 
 
 configure wave -signalnamewidth 1

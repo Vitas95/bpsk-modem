@@ -9,7 +9,6 @@ set obj modem_tx_tb/dut
 add wave -group DUT sim:/$obj/*
 add wave -group PRBS_IF sim:/$obj/prbs_if/*
 add wave -group FRAMER_IF sim:/$obj/framer_if/*
-add wave -group MAPPER_IF sim:/$obj/mapper_if/*
 
 # FRAMER
 set obj modem_tx_tb/dut/framer_inst
