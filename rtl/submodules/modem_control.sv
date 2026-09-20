@@ -15,7 +15,7 @@ module modem_control #(
     output bpsk_modem_pkg::modem_status_t modem_status,
 
     // Modem core lvl signal
-    output logic digital_loopback // enable digital loopback between tx and rx modem
+    output bpsk_modem_pkg::modem_mode_e loopback_mode
 );
 
 ///////////////////////////////
@@ -110,6 +110,6 @@ posedge_gen posedge_gen_inst_2 (
     .clk(clk), .in(rx_status.bist_active), .out(bist_tx_start));
 assign tx_ctrl.bist_start = bist_tx_start;
 
-assign digital_loopback = (current_state == BIST);
+assign loopback_mode = modem_ctrl.loopback_mode;
 
 endmodule

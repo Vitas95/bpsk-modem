@@ -1,8 +1,7 @@
 package bpsk_modem_pkg;
 
     // Top level data width
-    localparam int ADC_DATA_WIDTH = 8;
-    localparam int DAC_DATA_WIDTH = 8;
+    localparam int DAC_ADC_DATA_WIDTH = 8;
     localparam int DATA_WIDTH = 1;
     
     // Frame parameter
@@ -40,11 +39,19 @@ package bpsk_modem_pkg;
     localparam BIST_INTERPACKET_GAP = 1024; // Time interval between two packets in BIST mode.
     localparam BIST_WATCHDOG_LIMIT = (BIST_INTERPACKET_GAP + SYNC_LEN + 13 + HEADER_LEN) * CIC_R; // Clk cycles without pkt_rcvd before sync_lost in the BIST mode
 
+    // Loopback states
+    typedef enum logic [1:0] {
+        LOOPBACK_BASEBAND,  // [A]: right after the mapper, excluding DSP
+        LOOPBACK_DSP,       // [B]: after DSP chain, without analog loop
+        RF                  // Connections to the DAC and ADC
+    } modem_mode_e;
+
     // Input control of the modem control
     typedef struct packed {
-        logic modem_on;   // level, converted in posedge; switch on tx and rx modem
-        logic bist_start; // level, converted in posedge; switch on bist mode
-        logic bist_clear; // level, converted in posedge; clear bist statistics
+        logic modem_on;             // level, converted in posedge; switch on tx and rx modem
+        logic bist_start;           // level, converted in posedge; switch on bist mode
+        logic bist_clear;           // level, converted in posedge; clear bist statistics
+        modem_mode_e loopback_mode; // reg, defines loopback mode
     } modem_ctrl_t;
 
     // Output status of the modem control

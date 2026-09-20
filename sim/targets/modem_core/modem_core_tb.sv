@@ -14,8 +14,8 @@ import bpsk_modem_pkg::*;
 modem_ctrl_t modem_ctrl;
 modem_status_t modem_status;
 
-axis_if #(.DATA_WIDTH(ADC_DATA_WIDTH), .FRACT_WIDTH(0)) adc_if();
-axis_if #(.DATA_WIDTH(DAC_DATA_WIDTH), .FRACT_WIDTH(0)) dac_if();
+axis_if #(.DATA_WIDTH(DAC_ADC_DATA_WIDTH), .FRACT_WIDTH(0)) adc_if();
+axis_if #(.DATA_WIDTH(DAC_ADC_DATA_WIDTH), .FRACT_WIDTH(0)) dac_if();
 axis_if #(.DATA_WIDTH(DATA_WIDTH), .FRACT_WIDTH(0), .HAS_READY(1)) tx_if();
 assign tx_if.data  = '0;
 assign tx_if.valid = 0;
@@ -42,6 +42,7 @@ task modem_init();
     modem_ctrl.bist_clear = 0;
     modem_ctrl.bist_start = 0;
     modem_ctrl.modem_on   = 0;
+    modem_ctrl.loopback_mode = LOOPBACK_BASEBAND;
     #(4*CLK_PERIOD);
     @(posedge clk);
     rst <= 0;

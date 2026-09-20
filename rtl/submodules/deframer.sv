@@ -196,6 +196,8 @@ assign packet_num_ready = (sample_cnt == FRAME_CNT_END);
 posedge_gen posedge_gen_inst_0 (
     .clk(clk), .in(packet_num_ready), .out(packet_num_valid));
 
+// TODO: Add some check to the received packet number
+
 /////////////////////
 // CRC calculation //
 /////////////////////
