@@ -6,13 +6,13 @@
 //	 AXI4-Stream compatible (with tlast).
 //////////////////////////////////////////////////////////////////////////////////
 //                    +---------------+          
-//   Input samples -->| Hard Decision | ---------+ 
-//                    +---------------+          |            +-----------+ CRC status  
-//                            v                  +----------> | CRC Check | -->
-//                  +-------------------+        |            +-----------+
-//                  | Barker correlator |        v
+// Input samples -+-->| Hard Decision | ---------+ 
+//                |   +---------------+          |            +-----------+ CRC status  
+//                |           ↑                  +----------> | CRC Check | -->
+//                | +-------------------+        |            +-----------+
+//                +>| Barker correlator |        v
 //                  +-------------------+   +----------+                
-//                            v             |          +-------------------> Output data 
+//                            ↓             |          +-------------------> Output data 
 //                    +-------------+       | Selector |  
 //        ==========> | Control FSM | ====> |          |      +------------+
 //  External control  +-------------+       |          +----> |            | Bit error
@@ -21,6 +21,7 @@
 //                          PRBS (BIST)  -------------------> |            | status
 //                                                            +------------+
 //
+//////////////////////////////////////////////////////////////////////////////////
 
 module deframer #(
     parameter HEADER_LEN,
@@ -72,6 +73,78 @@ end
 
 assign pkt_rcvd = pkt_rcvd_dly[STAT_DELAY-1];
 
+// Ready in input sample stream is notused.
+assign s_axis_samples.ready = 1;
+
+///////////////////////
+// Barker correlator //
+///////////////////////
+// !!!Important!!! 
+// There is no delay for the input RX signal to compensate for the Barker correlator's delay.
+// The current delay is 2 clock cycles. Maximum sample rate is
+// Smax = Fclk/(1+Barker_delay)  
+// There is no delay line for an input signal because this 
+// modem aims to sample rate that is 20 times lower than Fclk. 
+
+localparam BARKER_THRESOHOLD = $bits(BARKER) * 2**s_axis_samples.FRACT_WIDTH;
+localparam BARKER_WIDTH = s_axis_samples.DATA_WIDTH;
+
+logic signed [BARKER_WIDTH-1 : 0]                   barker_shift_reg [$bits(BARKER)-1 : 0];
+logic signed [BARKER_WIDTH : 0]                     barker_sum_reg [$bits(BARKER)-1 : 0];
+logic signed [($bits(BARKER) + BARKER_WIDTH)-1 : 0] barker_out [$bits(BARKER)-1 : 0];
+logic signed [($bits(BARKER) + BARKER_WIDTH)-1 : 0] barker_abs_max;
+logic                                               pkt_found, pkt_inverse;
+
+always_ff @( posedge clk ) begin
+    if (rst || packet_finished) begin
+        for (int i = 0; i < $bits(BARKER); i++)
+            barker_shift_reg[i] <= 0;
+    end else if (s_axis_samples.valid && (pkt_found == 0)) begin
+        barker_shift_reg <= {barker_shift_reg[$bits(BARKER)-2:0], 
+                             $signed(s_axis_samples.data)};
+    end
+end
+
+always_comb begin
+    for (int i = 0; i < $bits(BARKER); i++)
+        if (BARKER[i] == 0)
+            barker_sum_reg [i] = -barker_shift_reg[i];
+        else
+            barker_sum_reg [i] = barker_shift_reg[i];
+
+    for (int i = 0; i < $bits(BARKER); i++) begin
+        if (i == 0)
+            barker_out[i] = barker_sum_reg[0];
+        else 
+            barker_out[i] = barker_out[i-1] + barker_sum_reg[i];
+    end
+end
+
+always_ff @( posedge clk ) begin
+    if (rst)
+        barker_abs_max <= '0;
+    else begin
+        if (barker_out[$bits(BARKER)-1] < 0)
+            barker_abs_max <= -barker_out[$bits(BARKER)-1];
+        else 
+            barker_abs_max <= barker_out[$bits(BARKER)-1];
+    end
+end
+
+always_ff @( posedge clk ) begin
+    if (rst || ~deframer_en || pkt_rcvd) begin
+        pkt_found   <= 0;
+        pkt_inverse <= 0;
+    end else begin
+        if (barker_abs_max >= BARKER_THRESOHOLD)
+            pkt_found <= 1;
+
+        // If the correlation peak is negative, the whole packet is inverted
+        if ((barker_out[$bits(BARKER)-1] < 0) && pkt_found)
+            pkt_inverse <= 1;
+    end
+end
+
 ///////////////////
 // Hard dececion //
 ///////////////////
@@ -87,42 +160,9 @@ always_ff @( posedge clk ) begin
         if (s_axis_samples.valid)
             // High bit is 0 -> logical 1
             // High bit is 1 -> logical 0
-            rx_bit <= ~s_axis_samples.data[s_axis_samples.DATA_WIDTH - 1];
-    end
-end
-
-// Ready in input sample stream is notused.
-assign s_axis_samples.ready = 1;
-
-///////////////////////
-// Barker correlator //
-///////////////////////
-
-//TODO Update to a signed version!!!
-
-logic [$bits(BARKER)-1 : 0] barker_shift_reg;
-logic [$bits(BARKER)-1 : 0] barker_sum_reg;
-logic [$bits(BARKER)-1 : 0] barker_out [$bits(BARKER)-1 : 0];
-logic                       pkt_found;
-
-always_ff @( posedge clk ) begin
-    if (rst || packet_finished) begin
-        for (int i = 0; i < $bits(BARKER); i++)
-            barker_shift_reg[i] <= 0;
-    end else if (rx_valid && (pkt_found == 0)) begin
-        barker_shift_reg <= {barker_shift_reg[$bits(BARKER)-2:0], rx_bit};
-    end
-end
-
-always_comb begin
-    for (int i = 0; i < $bits(BARKER); i++)
-        barker_sum_reg [i] = barker_shift_reg[i] ~^ BARKER[i];
-
-    for (int i = 0; i < $bits(BARKER); i++) begin
-        if (i == 0)
-            barker_out[i] = barker_sum_reg[0];
-        else 
-            barker_out[i] = barker_out[i-1] + barker_sum_reg[i];
+            // + inversion after Barker correlators
+            rx_bit <= (pkt_inverse) ? s_axis_samples.data[s_axis_samples.DATA_WIDTH - 1]:
+                                     ~s_axis_samples.data[s_axis_samples.DATA_WIDTH - 1];
     end
 end
 
@@ -157,15 +197,6 @@ always_comb begin
     else if (sample_cnt < DATA_END)      current_state = DATA; 
     else if (sample_cnt < FRAME_END) 	 current_state = CRC;
     else                                 current_state = IDLE;
-end
-
-always_ff @( posedge clk ) begin
-    if (rst || ~deframer_en || pkt_rcvd)
-        pkt_found <= 0;
-    else begin
-        if (barker_out[$bits(BARKER)-1] == $bits(BARKER))
-            pkt_found <= 1;
-    end
 end
 
 //////////////////////

@@ -58,7 +58,7 @@ initial begin
     #(CLK_PERIOD);
     @(posedge clk);
     bist_en <= 0;
-    drv_a.apply_pulse_from_file (clk, "../test_data.txt", 4, 0);
+    drv_a.apply_pulse_from_file (clk, "../test_data_inv_barker.txt", 20, 0);
     @(posedge clk);
 end
 
