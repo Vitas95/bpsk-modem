@@ -6,37 +6,38 @@ from pathlib import Path
 from collections import defaultdict
 
 # =============================================================================
-# Конфигурация
+# Configuration
 # =============================================================================
 
 SV_EXTENSIONS = {'.v', '.sv', '.vh', '.svh'}
 INCLUDE_EXTENSIONS = {'.vh', '.svh'}
 
-# Директории, которые никогда не нужно сканировать: система контроля версий,
-# рабочие библиотеки симулятора (Questa/ModelSim создаёт work/, @_opt/, _opt/ и т.п.)
-# Экономит время и убирает риск коллизий/переполнения длины пути на "мусорных" файлах.
+# Directories that should never be scanned: version control, simulator work
+# libraries (Questa/ModelSim creates work/, @_opt/, _opt/, etc.). This saves
+# time and avoids the risk of collisions / path-length overflow on "junk"
+# files.
 EXCLUDE_DIR_NAMES = {'.git', '.svn', '.hg', '__pycache__', 'work'}
 
 
 def is_excluded_dir(dirname: str) -> bool:
     if dirname in EXCLUDE_DIR_NAMES:
         return True
-    # Артефакты Questa/ModelSim: _opt, @_opt, _lib и т.п.
+    # Questa/ModelSim artifacts: _opt, @_opt, _lib, etc.
     if dirname.startswith('_') or dirname.startswith('@'):
         return True
     return False
 
 
 # -----------------------------------------------------------------------
-# Windows: снятие ограничения MAX_PATH (260 символов).
-# Без этого os.walk/open() могут молча "терять" файлы, лежащие глубоко
-# во вложенных папках, если полный путь превышает лимит.
+# Windows: lifting the MAX_PATH (260 character) limit.
+# Without this, os.walk/open() can silently "lose" files that live deep
+# inside nested folders once the full path exceeds the limit.
 #
-# ВАЖНО: этот префикс нужен ТОЛЬКО для файловых операций (open, os.walk).
-# Для текстовых операций (os.path.relpath, print) всегда используем
-# strip_long_prefix() — иначе os.path.relpath на Windows падает с
-# "ValueError: path is on mount 'C:', start on mount '\\?\C:'",
-# если одна сторона сравнения с префиксом, а другая без него.
+# IMPORTANT: this prefix is needed ONLY for filesystem operations (open,
+# os.walk). For text operations (os.path.relpath, print) we always use
+# strip_long_prefix() instead — otherwise os.path.relpath on Windows fails
+# with "ValueError: path is on mount 'C:', start on mount '\\?\C:'" when
+# one side of the comparison has the prefix and the other doesn't.
 # -----------------------------------------------------------------------
 def long_path(p: Path) -> Path:
     if platform.system() != 'Windows':
@@ -44,16 +45,16 @@ def long_path(p: Path) -> Path:
     s = str(p)
     if s.startswith('\\\\?\\'):
         return p
-    # UNC-пути (\\server\share\...) требуют префикса \\?\UNC\
+    # UNC paths (\\server\share\...) require the \\?\UNC\ prefix.
     if s.startswith('\\\\'):
         return Path('\\\\?\\UNC\\' + s[2:])
     return Path('\\\\?\\' + s)
 
 
 def strip_long_prefix(p: Path) -> Path:
-    r"""Обратная операция к long_path() — убирает \\?\ / \\?\UNC\ префикс,
-    чтобы путь можно было безопасно сравнивать с обычным (непрефиксованным)
-    путём в os.path.relpath() и показывать пользователю в логах."""
+    r"""Inverse of long_path() — removes the \\?\ / \\?\UNC\ prefix so the
+    path can be safely compared against a regular (unprefixed) path in
+    os.path.relpath() and shown to the user in logs."""
     s = str(p)
     if s.startswith('\\\\?\\UNC\\'):
         return Path('\\\\' + s[8:])
@@ -63,23 +64,23 @@ def strip_long_prefix(p: Path) -> Path:
 
 
 def rel(path: Path, start: Path) -> str:
-    """Безопасный relpath: всегда сравнивает пути в одинаковой (непрефиксованной)
-    форме, независимо от того, откуда они пришли."""
+    """Safe relpath: always compares paths in the same (unprefixed) form,
+    regardless of where they came from."""
     return os.path.relpath(strip_long_prefix(path), strip_long_prefix(start)).replace('\\', '/')
 
 
 # =============================================================================
-# Сбор файлов проекта
+# Collecting project files
 # =============================================================================
 
 def get_project_files(project_dir: Path):
     """
-    Собирает все файлы с исходниками/инклудами внутри project_dir.
+    Collects all source/include files inside project_dir.
 
-    В отличие от исходной версии, хранит СПИСОК путей на каждое имя файла,
-    а не один путь — иначе одноимённые файлы в разных папках молча
-    перезаписывали друг друга, и часть проекта пропадала из компиляции
-    без единого предупреждения.
+    Unlike the original version, this stores a LIST of paths for each file
+    name instead of a single path — otherwise files that share a name but
+    live in different folders would silently overwrite each other, and part
+    of the project would disappear from the compilation without any warning.
     """
     project_files: dict[str, list[Path]] = defaultdict(list)
     inc_dirs: set[Path] = set()
@@ -87,8 +88,8 @@ def get_project_files(project_dir: Path):
     scan_root = long_path(project_dir)
 
     for root, dirs, files in os.walk(scan_root, topdown=True):
-        # Обрезаем ветки дерева прямо во время обхода — быстрее и безопаснее,
-        # чем фильтровать результат постфактум.
+        # Prune tree branches during the walk itself — faster and safer than
+        # filtering the result after the fact.
         dirs[:] = [d for d in dirs if not is_excluded_dir(d)]
 
         for file in files:
@@ -102,22 +103,22 @@ def get_project_files(project_dir: Path):
 
 
 def report_name_collisions(project_files: dict[str, list[Path]]):
-    """Явно предупреждает, если несколько файлов делят одно имя — раньше
-    это приводило к тихой потере одного из них."""
+    """Explicitly warns if several files share the same name — previously
+    this led to one of them being silently dropped."""
     had_collisions = False
     for name, paths in sorted(project_files.items()):
         if len(paths) > 1:
             had_collisions = True
-            print(f"   ПРЕДУПРЕЖДЕНИЕ: несколько файлов с именем '{name}':")
+            print(f"   WARNING: multiple files named '{name}':")
             for p in paths:
                 print(f"      - {strip_long_prefix(p)}")
     if had_collisions:
-        print("   (для include/instance-резолвинга по имени будет использован "
-              "первый найденный файл — переименуйте дубликаты, если это не то, что нужно)")
+        print("   (the first file found will be used for include/instance "
+              "resolution by name — rename the duplicates if that's not what you want)")
 
 
 # =============================================================================
-# Парсинг зависимостей файла
+# Parsing file dependencies
 # =============================================================================
 
 KEYWORDS = {
@@ -137,10 +138,21 @@ KEYWORDS = {
     'automatic', 'const', 'virtual', 'extends', 'signed', 'unsigned', 'genvar',
 }
 
-# Строки-директивы препроцессора (`define, `ifdef, `include и т.п.) не должны
-# попадать в поиск инстансов — иначе имя макроса или условие компиляции может
-# ложно распознаться как "тип модуля". `include обрабатывается отдельно выше,
-# остальное просто вырезаем (вместе с продолжениями строк через '\').
+# Preprocessor directive lines (`define, `ifdef, `include, etc.) must not
+# leak into the instance search — otherwise a macro name or a compilation
+# guard could be falsely recognized as a "module type". `include is handled
+# separately above; everything else is simply cut out (along with its
+# line continuations via a trailing '\').
+#
+# A multi-line `define (continued via a trailing backslash) is a special
+# case: its BODY often contains a real module instantiation (e.g. a macro
+# that wraps "comb #(...) instance_name (...)" for repeated use across a
+# file). Only the directive's header line is blanked; continuation lines
+# are kept so instantiations inside macro bodies are still detected.
+# Backtick token-paste sequences inside those lines (like ``name``, used
+# to build instance/signal names from macro arguments, e.g.
+# "``name``" -> "name") are stripped so the instantiation regex can match
+# straight through them.
 def strip_directive_lines(content: str) -> str:
     lines = content.split('\n')
     out = []
@@ -148,7 +160,10 @@ def strip_directive_lines(content: str) -> str:
     for line in lines:
         stripped = line.strip()
         if skip_continuation:
-            out.append('')
+            # Continuation line of a multi-line directive (most commonly the
+            # body of a `define): keep it for instantiation scanning, just
+            # strip the backtick token-paste markers.
+            out.append(line.replace('`', ''))
             skip_continuation = stripped.endswith('\\')
             continue
         if stripped.startswith('`'):
@@ -160,12 +175,13 @@ def strip_directive_lines(content: str) -> str:
 
 INCLUDE_RE = re.compile(r'^\s*`include\s+"([^"]+)"')
 IMPORT_RE = re.compile(r'\bimport\s+(\w+)::')
-# Пакет можно использовать и без явного `import pkg::*;` — просто через
-# scope resolution вида `pkg::symbol` (например, в объявлении порта или типа:
-# `bpsk_tx_pkg::tx_state_t state`). IMPORT_RE такое не ловит, из-за чего
-# зависимость от пакета "терялась" для файлов, которые используют его именно
-# так, а не через import — и файл пакета мог оказаться в .f ПОСЛЕ файла,
-# который его использует. PKG_SCOPE_RE ловит любое "identifier::" обращение.
+# A package can also be used without an explicit `import pkg::*;` — simply
+# through scope resolution like `pkg::symbol` (e.g. in a port or type
+# declaration: `bpsk_tx_pkg::tx_state_t state`). IMPORT_RE doesn't catch
+# this, which meant the dependency on the package was "lost" for files that
+# use it this way instead of via import — and the package file could end up
+# in the .f AFTER the file that uses it. PKG_SCOPE_RE catches any
+# "identifier::" reference.
 PKG_SCOPE_RE = re.compile(r'\b([a-zA-Z_]\w*)\s*::')
 DEFINITION_RE = re.compile(r'\b(module|package|interface)\s+([a-zA-Z_]\w*)')
 IDENT_RE = re.compile(r'[a-zA-Z_]\w*')
@@ -181,9 +197,9 @@ def _skip_ws(s: str, i: int) -> int:
 
 
 def _match_balanced_parens(s: str, i: int):
-    """s[i] должен быть '('. Возвращает индекс сразу ПОСЛЕ соответствующей
-    закрывающей ')', корректно учитывая вложенные скобки (например,
-    вызовы функций вида $size(...) внутри списка параметров инстанса)."""
+    """s[i] must be '('. Returns the index right AFTER the matching closing
+    ')', correctly accounting for nested parentheses (e.g. function calls
+    like $size(...) inside an instance's parameter list)."""
     assert s[i] == '('
     depth = 1
     i += 1
@@ -199,12 +215,12 @@ def _match_balanced_parens(s: str, i: int):
 
 def extract_instances(content: str) -> set[str]:
     """
-    Находит инстансы вида:
+    Finds instantiations of the form:
         module_type instance_name (...)
         module_type #( ... ) instance_name (...)
-    Скобки параметров разбираются вручную со счётчиком глубины —
-    это надёжнее ленивой regex-жадности на выражениях с вложенными
-    скобками (например, $size(...) внутри #(...)).
+    The parameter parentheses are parsed manually with a depth counter —
+    this is more reliable than lazy regex greediness on expressions with
+    nested parentheses (e.g. $size(...) inside #(...)).
     """
     deps: set[str] = set()
     n = len(content)
@@ -223,7 +239,7 @@ def extract_instances(content: str) -> set[str]:
 
         k = _skip_ws(content, j)
 
-        # Вариант 1: word #( ... ) instance_name (
+        # Variant 1: word #( ... ) instance_name (
         if k < n and content[k] == '#':
             p = _skip_ws(content, k + 1)
             if p < n and content[p] == '(':
@@ -237,12 +253,13 @@ def extract_instances(content: str) -> set[str]:
                         i = m2.end()
                         continue
 
-        # Вариант 2: word instance_name (   (без параметров)
+        # Variant 2: word instance_name (   (no parameters)
         elif k < n and (content[k].isalpha() or content[k] == '_'):
             m2 = IDENT_RE.match(content, k)
-            # Важно проверить, что и второе слово — не ключевое: иначе
-            # "begin : SomeLabel" перед "if (...)"/"for (...)" ложно
-            # распознаётся как инстанс типа "SomeLabel" с именем "if"/"for".
+            # It's important to also check that the second word isn't a
+            # keyword: otherwise "begin : SomeLabel" before "if (...)"/
+            # "for (...)" would be falsely recognized as an instance of
+            # type "SomeLabel" named "if"/"for".
             if m2 and m2.group(0) not in KEYWORDS:
                 q = _skip_ws(content, m2.end())
                 if q < n and content[q] == '(':
@@ -262,7 +279,7 @@ def parse_file_content(file_path: Path):
         with open(long_path(file_path), 'r', encoding='utf-8', errors='ignore') as f:
             content = f.read()
     except Exception as e:
-        print(f"   ОШИБКА чтения файла {file_path}: {e}")
+        print(f"   ERROR reading file {file_path}: {e}")
         return modules_defined, dependencies
 
     content = re.sub(r'//.*', '', content)
@@ -276,18 +293,19 @@ def parse_file_content(file_path: Path):
     for pkg in IMPORT_RE.findall(content):
         dependencies.add(pkg)
 
-    # `include уже собран выше; для поиска определений модулей, инстансов и
-    # пакетных scope-обращений убираем строки-директивы, чтобы не ловить
-    # ложные срабатывания вида "`define FOO(...)" или "`ifdef BAR".
+    # `include has already been collected above; for finding module
+    # definitions, instances and package scope references, we strip
+    # directive lines so we don't pick up false positives like
+    # "`define FOO(...)" or "`ifdef BAR".
     content_for_scan = strip_directive_lines(content)
 
     for match in DEFINITION_RE.finditer(content_for_scan):
         modules_defined.add(match.group(2))
 
-    # Обращения к пакету вида `pkg::symbol` без явного import (например, в
-    # объявлении типа порта) — тоже зависимость, и её обязательно нужно
-    # учитывать, иначе файл пакета может оказаться в списке компиляции
-    # позже файла, который его использует.
+    # References to a package like `pkg::symbol` without an explicit import
+    # (e.g. in a port type declaration) are also a dependency, and must be
+    # accounted for — otherwise the package file could end up in the
+    # compilation list after the file that uses it.
     for pkg in PKG_SCOPE_RE.findall(content_for_scan):
         if pkg not in KEYWORDS:
             dependencies.add(pkg)
@@ -298,7 +316,7 @@ def parse_file_content(file_path: Path):
 
 
 def map_project(project_files: dict[str, list[Path]]):
-    """Строит карту 'символ (module/package/interface/имя файла) -> файл'."""
+    """Builds a map of 'symbol (module/package/interface/file name) -> file'."""
     mod_to_file: dict[str, Path] = {}
     file_deps: dict[Path, set[str]] = {}
     all_paths = [p for paths in project_files.values() for p in paths]
@@ -308,13 +326,14 @@ def map_project(project_files: dict[str, list[Path]]):
         file_deps[file_path] = deps
         for mod in mods:
             if mod in mod_to_file and mod_to_file[mod] != file_path:
-                print(f"   ПРЕДУПРЕЖДЕНИЕ: '{mod}' определён и в "
-                      f"{strip_long_prefix(mod_to_file[mod])}, и в {strip_long_prefix(file_path)} — используется первый")
+                print(f"   WARNING: '{mod}' is defined both in "
+                      f"{strip_long_prefix(mod_to_file[mod])} and in {strip_long_prefix(file_path)} — using the first one")
                 continue
             mod_to_file[mod] = file_path
 
-    # Резолвинг по имени файла (для `include) — только если символ с таким
-    # именем ещё не определён; при коллизии имён файлов берём первый найденный.
+    # Resolution by file name (for `include) — only if a symbol with that
+    # name isn't already defined; on a file name collision, the first file
+    # found is used.
     for name, paths in project_files.items():
         mod_to_file.setdefault(name, paths[0])
 
@@ -322,7 +341,7 @@ def map_project(project_files: dict[str, list[Path]]):
 
 
 # =============================================================================
-# Построение порядка компиляции
+# Building the compilation order
 # =============================================================================
 
 def resolve_dependencies(start_file_path: Path, mod_to_file, file_deps):
@@ -360,7 +379,7 @@ def resolve_dependencies(start_file_path: Path, mod_to_file, file_deps):
 
 def main():
     if len(sys.argv) < 3:
-        print("Использование: python generate_f.py <путь_к_папке_проекта> <имя_top_файла.sv>")
+        print("Usage: python generate_f.py <path_to_project_folder> <top_file_name.sv>")
         sys.exit(1)
 
     project_dir = Path(sys.argv[1]).resolve()
@@ -368,30 +387,30 @@ def main():
     current_working_dir = Path.cwd().resolve()
 
     if not project_dir.exists() or not project_dir.is_dir():
-        print(f"Ошибка: Папка проекта '{strip_long_prefix(project_dir)}' не существует.")
+        print(f"Error: project folder '{strip_long_prefix(project_dir)}' does not exist.")
         sys.exit(1)
 
-    print(f"1. Текущая папка запуска: {strip_long_prefix(current_working_dir)}")
-    print(f"2. Сканирование папки проекта: {strip_long_prefix(project_dir)}")
+    print(f"1. Current working directory: {strip_long_prefix(current_working_dir)}")
+    print(f"2. Scanning project folder: {strip_long_prefix(project_dir)}")
     project_files, inc_dirs = get_project_files(project_dir)
-    print(f"   Найдено файлов: {sum(len(v) for v in project_files.values())}")
+    print(f"   Files found: {sum(len(v) for v in project_files.values())}")
     report_name_collisions(project_files)
 
     if top_file_name not in project_files:
-        print(f"Ошибка: Файл '{top_file_name}' не найден внутри папки проекта.")
+        print(f"Error: file '{top_file_name}' not found inside the project folder.")
         sys.exit(1)
 
     target_file_path = project_files[top_file_name][0]
 
-    print("3. Глубокий анализ кода и связей модулей...")
+    print("3. Deep analysis of code and module relationships...")
     mod_to_file, file_deps = map_project(project_files)
 
-    print("4. Рекурсивное построение дерева компиляции (снизу вверх)...")
+    print("4. Recursively building the compilation tree (bottom-up)...")
     file_list, unresolved = resolve_dependencies(target_file_path, mod_to_file, file_deps)
 
     if unresolved:
-        print("   ПРЕДУПРЕЖДЕНИЕ: не удалось найти файлы для следующих зависимостей "
-              "(проверь опечатки в именах модулей/`include или что файл вообще есть в project_dir):")
+        print("   WARNING: could not find files for the following dependencies "
+              "(check for typos in module names/`include, or that the file even exists in project_dir):")
         for u in sorted(unresolved):
             print(f"      - {u}")
 
@@ -399,25 +418,25 @@ def main():
     output_f_file = current_working_dir / output_f_name
 
     with open(output_f_file, 'w', encoding='utf-8') as f:
-        f.write("// Автоматически сгенерировано для QuestaSim\n")
-        f.write(f"// Все пути указаны ОТНОСИТЕЛЬНО этой папки запуска: {strip_long_prefix(current_working_dir)}\n\n")
+        f.write("// Auto-generated for QuestaSim\n")
+        f.write(f"// All paths are RELATIVE to this working directory: {strip_long_prefix(current_working_dir)}\n\n")
 
         f.write("+libext+.v+.sv+.vh+.svh\n\n")
 
-        f.write("// Директории include (относительно папки запуска):\n")
+        f.write("// Include directories (relative to the working directory):\n")
         rel_proj_str = rel(project_dir, current_working_dir)
         f.write(f"+incdir+{rel_proj_str}\n")
 
         for inc_path in sorted(inc_dirs):
             f.write(f"+incdir+{rel(inc_path, current_working_dir)}\n")
 
-        f.write("\n// Порядок компиляции файлов (относительно папки запуска):\n")
+        f.write("\n// File compilation order (relative to the working directory):\n")
         for file_path in file_list:
             f.write(f"{rel(file_path, current_working_dir)}\n")
 
-    print(f"\nУспешно! Создан конфигурационный файл ({len(file_list)} файлов):\n{strip_long_prefix(output_f_file)}")
+    print(f"\nSuccess! Config file created ({len(file_list)} files):\n{strip_long_prefix(output_f_file)}")
     if unresolved:
-        print(f"НО есть {len(unresolved)} нерезолвленных зависимостей — см. предупреждения выше.")
+        print(f"BUT there are {len(unresolved)} unresolved dependencies — see the warnings above.")
         sys.exit(2)
 
 
