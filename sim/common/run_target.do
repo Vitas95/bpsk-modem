@@ -1,12 +1,12 @@
 # sim/common/run_target.do
-# Требование: перед вызовом cwd должен быть = sim/ (корень симуляции)
-# Использование:
+# Requirements: cwd must be = sim/ (root fir simulations)
+# Example:
 #   cd sim
 #   do common/run_target.do modem_tx_sim
 
 if {![info exists 1] || $1 eq ""} {
-    echo "Ошибка: не указан таргет."
-    echo "Использование: do common/run_target.do <target_name>  (запускать из sim/)"
+    echo "Error: no target specified."
+    echo "Example: do common/run_target.do <target_name>"
     return -code error "target name required"
 }
 set TARGET_NAME $1
@@ -15,18 +15,16 @@ set SIM_ROOT   [pwd]
 set COMMON_DIR [file join $SIM_ROOT common]
 set TARGET_DIR [file join $SIM_ROOT targets $TARGET_NAME]
 
-# Явная проверка, что cwd действительно sim/ — иначе понятная ошибка,
-# а не путаница с "не найден таргет"
+# Directory check
 if {![file isdirectory [file join $SIM_ROOT targets]] || ![file isdirectory $COMMON_DIR]} {
-    echo "Ошибка: похоже, скрипт запущен не из папки sim/."
-    echo "Текущая директория: $SIM_ROOT"
-    echo "Сделай сначала: cd <путь_до>/sim"
+    echo "Current directory: $SIM_ROOT"
+    echo "Do first: cd <путь_до>/sim"
     return -code error "wrong working directory"
 }
 
 if {![file isdirectory $TARGET_DIR]} {
-    echo "Ошибка: таргет '$TARGET_NAME' не найден в $SIM_ROOT/targets/"
-    echo "Доступные таргеты:"
+    echo "Error: target '$TARGET_NAME' not found in $SIM_ROOT/targets/"
+    echo "Available targets:"
     foreach d [glob -nocomplain -type d -directory [file join $SIM_ROOT targets] *] {
         echo "  - [file tail $d]"
     }
@@ -62,7 +60,8 @@ if {[info exists WAVES_DO] && $WAVES_DO ne ""} {
 
 run -all
 
-cd $PREV_DIR
+# Does not allow stopping the simulation from the testbench
+# cd $PREV_DIR
 
 if {[batch_mode]} {
     quit -sim
