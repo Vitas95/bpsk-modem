@@ -1,7 +1,5 @@
 package bpsk_tx_pkg;
 
-// Built-in Self-Test (BIST) parameters for Tx control  
-// // // localparam BIST_MIN_PKT_GAP = 1024;
 
 // Fixed point parameters for all signed data interfaces between all DSP 
 // blocks in the transmitter. 
@@ -10,11 +8,11 @@ package bpsk_tx_pkg;
 // | Mapper | ====> | FIR | ====> | CIC | ====> | DUC |
 // +--------+       +-----+       +-----+       +-----+
 localparam FIR_DATA_WIDTH  = 2;
-localparam FIR_FIXED_WIDTH = 0;
+localparam FIR_FRACT_WIDTH = 0;
 localparam CIC_DATA_WIDTH  = 8;
-localparam CIC_FIXED_WIDTH = 6;
+localparam CIC_FRACT_WIDTH = 6;
 localparam DUC_DATA_WIDTH  = 16;
-localparam DUC_FIXED_WIDTH = 14;
+localparam DUC_FRACT_WIDTH = 14;
 
 // Input control of the tx control
 typedef struct packed {

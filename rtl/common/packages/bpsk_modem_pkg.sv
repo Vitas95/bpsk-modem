@@ -30,13 +30,14 @@ package bpsk_modem_pkg;
     localparam logic [FIR_COEFF_WIDTH-1:0] FIR_COEFF [0:6] = '{
     2, -12, -4, 26, 78, 128, 150
     };
+    localparam FIR_COEFF_NUM = $size(FIR_COEFF, 1) * 2 - 1;
 
     localparam CIC_R = 20;  // Upsampling factor, must be greater than 2!
     localparam CIC_N = 4;   // Number of stages
     localparam CIC_D = 1;   // Differential delay
 
      // Timing constants
-    localparam BIST_INTERPACKET_GAP = 1024; // Time interval between two packets in BIST mode.
+    localparam BIST_INTERPACKET_GAP = 1024; // Interval between two packets in BIST mode.
     localparam BIST_WATCHDOG_LIMIT = (BIST_INTERPACKET_GAP + SYNC_LEN + 13 + HEADER_LEN) * CIC_R; // Clk cycles without pkt_rcvd before sync_lost in the BIST mode
 
     // Loopback states

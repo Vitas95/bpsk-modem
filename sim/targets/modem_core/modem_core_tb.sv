@@ -43,7 +43,7 @@ task modem_init();
     modem_ctrl.bist_start = 0;
     modem_ctrl.modem_on   = 0;
     modem_ctrl.loopback_mode = LOOPBACK_BASEBAND;
-    #(4*CLK_PERIOD);
+    #(40*CLK_PERIOD);
     @(posedge clk);
     rst <= 0;
     #(4*CLK_PERIOD);
@@ -85,13 +85,14 @@ always @(posedge modem_status.bist_done) begin
     $display(" Bit Error Accum    : %0d", modem_status.bist_bit_err_accum);
     $display("==================================================\n");
 
-    // Ваша оригинальная логика сброса BIST флагов
     #(4*CLK_PERIOD);
     @(posedge clk);
     modem_ctrl.bist_clear = 1;
     #(4*CLK_PERIOD);
     @(posedge clk);
     modem_ctrl.bist_clear = 0;
+
+    $stop;
 end
 
 initial begin

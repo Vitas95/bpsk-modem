@@ -89,18 +89,14 @@ tx_control  #(
 //////////////
 
 mapper #(
-    .CLK_PER_SAMPLE(CIC_R)
+    .CLK_PER_SAMPLE(CIC_R * 4)
 ) mapper_inst (
     .clk(clk),
     .rst(rst),
     .data_in(framer_if),
 
-    // At the fist stage of development mapper output will 
-    // be connected to the final tx interface to check 
-    // modem in internal baseband loopback.
     .data_out(tx_signal)
 );
-    
 
 
 endmodule

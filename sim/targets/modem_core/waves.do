@@ -9,7 +9,6 @@ add wave -group TB sim:/$obj/*
 # DUT
 set obj modem_core_tb/dut
 add wave -group DUT sim:/$obj/*
-add wave -group TX_SIGNAL_IF sim:/$obj/tx_signal/*
 
 # MODEM CONTROL
 set obj modem_core_tb/dut/modem_control_inst
@@ -20,6 +19,19 @@ set obj modem_core_tb/dut/modem_tx_inst
 add wave -group MODEM_TX sim:/$obj/*
 add wave -group MODEM_TX sim:/$obj/tx_control_inst/*
 add wave -group MODEM_TX_PRBS sim:/$obj/prbs_gen_inst/*
+
+# DSP_TX
+set obj modem_core_tb/dut/dsp_tx_inst
+add wave -group DSP_TX sim:/$obj/*
+add wave -group DSP_TX sim:/$obj/s_axis/*
+add wave -group DSP_TX sim:/$obj/fir_if/*
+add wave -group DSP_TX sim:/$obj/cic_if/*
+add wave -group DSP_TX sim:/$obj/duc_if/*
+
+# CIC 
+set obj modem_core_tb/dut/dsp_tx_inst/up_cic_filter_inst/g_interpolator
+add wave -group CIC sim:/$obj/*
+add wave -group CIC sim:/$obj/int_gen[0]/u_int/*
 
 # MODEM RX
 set obj modem_core_tb/dut/modem_rx_inst

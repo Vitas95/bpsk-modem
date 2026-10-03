@@ -48,11 +48,13 @@ import bpsk_modem_pkg::*;
 import bpsk_tx_pkg::*;
 import bpsk_rx_pkg::*;
 
-axis_if #(.DATA_WIDTH(2))                   tx_signal();    // modem_tx -> dsp_tx
-axis_if #(.DATA_WIDTH(DAC_ADC_DATA_WIDTH))  tx_dsp();       // dsp_tx -> DAC
-axis_if #(.DATA_WIDTH(DAC_ADC_DATA_WIDTH))  rx_dsp();       // ADC -> dsp_rx  
-axis_if #(.DATA_WIDTH(DAC_ADC_DATA_WIDTH))  rx_dsp_out();   // dsp_rx -> loopback_mux  
-axis_if #(.DATA_WIDTH(2))                   rx_signal();    // loopback_mux -> modem_rx
+axis_if #(.DATA_WIDTH(2))                   tx_signal();      // modem_tx -> dsp_tx
+axis_if #(.DATA_WIDTH(2))                   tx_signal_test(); // modem_tx -> dsp_tx_test
+axis_if #(.DATA_WIDTH(DAC_ADC_DATA_WIDTH))  tx_dsp();         // dsp_tx -> DAC
+axis_if #(.DATA_WIDTH(DAC_ADC_DATA_WIDTH))  tx_dsp_test();    // dsp_tx_test
+axis_if #(.DATA_WIDTH(DAC_ADC_DATA_WIDTH))  rx_dsp();         // ADC -> dsp_rx  
+axis_if #(.DATA_WIDTH(DAC_ADC_DATA_WIDTH))  rx_dsp_out();     // dsp_rx -> loopback_mux  
+axis_if #(.DATA_WIDTH(2))                   rx_signal();      // loopback_mux -> modem_rx
 
 ///////////////////////////
 // Mainblock connections //
@@ -77,7 +79,7 @@ modem_tx modem_tx_inst(
 
 dsp_bypass #(
     .REGISTERED(1)
-) dsp_tx (
+) dsp_tx_bypass (
     .clk(clk),
     .rst(rst),
 
@@ -85,9 +87,20 @@ dsp_bypass #(
     .m_axis(tx_dsp) 
 );
 
+assign tx_signal_test.data  = tx_signal.data;
+assign tx_signal_test.valid = tx_signal.valid;
+// DSP tx test
+dsp_tx dsp_tx_inst(
+    .clk(clk),
+    .rst(rst),
+
+    .s_axis(tx_signal_test), 
+    .m_axis(tx_dsp_test) 
+);
+
 dsp_bypass #(
     .REGISTERED(1)
-) dsp_rx (
+) dsp_rx_bypass (
     .clk(clk),
     .rst(rst),
 

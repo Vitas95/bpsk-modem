@@ -7,13 +7,13 @@ package bpsk_rx_pkg;
 // | DDC | ====>| CIC | ====>| FIR | ====> | SYNC | ====> | Deframer |
 // +-----+      +-----+      +-----+       +------+       +----------+
 localparam DDC_DATA_WIDTH  = 16;
-localparam DDC_FIXED_WIDTH = 14;
+localparam DDC_FRACT_WIDTH = 14;
 localparam CIC_DATA_WIDTH  = 16;
-localparam CIC_FIXED_WIDTH = 14;
+localparam CIC_FRACT_WIDTH = 14;
 localparam FIR_DATA_WIDTH  = 16;
-localparam FIR_FIXED_WIDTH = 14;
+localparam FIR_FRACT_WIDTH = 14;
 localparam SYNC_DATA_WIDTH  = 16;
-localparam SYNC_FIXED_WIDTH = 14;
+localparam SYNC_FRACT_WIDTH = 14;
 
 // Input control of the rx control
 typedef struct packed {
