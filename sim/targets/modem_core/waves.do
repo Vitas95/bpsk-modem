@@ -19,8 +19,9 @@ set obj modem_core_tb/dut/modem_tx_inst
 add wave -group MODEM_TX sim:/$obj/*
 add wave -group MODEM_TX sim:/$obj/tx_control_inst/*
 add wave -group MODEM_TX_PRBS sim:/$obj/prbs_gen_inst/*
+add wave -group MODEM_TX_FRAMER sim:/$obj/framer_inst/*
 
-# DSP_TX
+# DSP_TX_IF
 set obj modem_core_tb/dut/dsp_tx_inst
 add wave -group DSP_TX sim:/$obj/*
 add wave -group DSP_TX sim:/$obj/s_axis/*
@@ -38,6 +39,7 @@ set obj modem_core_tb/dut/modem_rx_inst
 add wave -group MODEM_RX sim:/$obj/*
 add wave -group MODEM_RX sim:/$obj/rx_control_inst/*
 add wave -group MODEM_RX_PRBS sim:/$obj/prbs_gen_inst/*
+add wave -group MODEM_RX_DEFRAMER sim:/$obj/deframer_inst/*
 
 
 configure wave -signalnamewidth 1

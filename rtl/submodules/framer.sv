@@ -32,7 +32,6 @@ module framer #(
     parameter FRAME_CNT_LEN,
     parameter DATA_LEN,
     parameter CRC_LEN,
-    parameter TAIL_LEN,
     parameter BARKER,
     parameter HEADER_DATA,
     parameter HEADER_BIST
@@ -63,7 +62,7 @@ module framer #(
 // State machine //
 ///////////////////
 typedef enum logic [2:0] { 
-    IDLE, PREAMBLE, HEADER, FRAME_CNT, DATA, CRC, TAIL 
+    IDLE, PREAMBLE, HEADER, FRAME_CNT, DATA, CRC
 } state;
 state current_state;
 
@@ -71,10 +70,9 @@ localparam PREAMBLE_END  = SYNC_LEN + $bits(BARKER);
 localparam HEADER_END    = PREAMBLE_END + HEADER_LEN;
 localparam FRAME_CNT_END = HEADER_END + FRAME_CNT_LEN;
 localparam DATA_END      = FRAME_CNT_END + DATA_LEN;
-localparam CRC_END       = DATA_END + CRC_LEN;
-localparam FRAME_END     = CRC_END + TAIL_LEN; 
+localparam FRAME_END     = DATA_END + CRC_LEN;
 
-logic [$clog2(CRC_END)-1:0]  sample_cnt;
+logic [$clog2(FRAME_END)-1:0]  sample_cnt;
 
 logic advance;
 assign advance  = m_axis.ready && m_axis.valid; // Data was transfered to the slave
@@ -84,8 +82,8 @@ assign advance  = m_axis.ready && m_axis.valid; // Data was transfered to the sl
 // and reset when packet is finished
 logic enable;
 always_ff @(posedge clk) begin
-    if (rst || sample_cnt == FRAME_END - 1) enable <= 0;
-    else if (packet_start)                         enable <= 1;
+    if (rst || sample_cnt == FRAME_END) enable <= 0;
+    else if (packet_start)                  enable <= 1;
 end
 
 always_comb begin
@@ -94,8 +92,7 @@ always_comb begin
     else if (sample_cnt < HEADER_END)    current_state = HEADER;
     else if (sample_cnt < FRAME_CNT_END) current_state = FRAME_CNT;
     else if (sample_cnt < DATA_END)      current_state = DATA; 
-    else if (sample_cnt < CRC_END) 	     current_state = CRC;
-    else if (sample_cnt < FRAME_END)     current_state = TAIL;
+    else if (sample_cnt < FRAME_END)     current_state = CRC;
     else                                 current_state = IDLE;
 end
 
@@ -205,12 +202,10 @@ always_comb begin
 
         CRC:     m_axis.data = crc[7];
         default: m_axis.valid = 1'b0;
-
-        TAIL:    m_axis.data = 0;
     endcase
 end
 
-assign m_axis.last = (current_state == TAIL) &&
+assign m_axis.last = (current_state == CRC) &&
                      (sample_cnt == FRAME_END - 1) &&
                      (m_axis.valid == 1);
 
