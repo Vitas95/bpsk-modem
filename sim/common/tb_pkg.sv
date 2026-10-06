@@ -1,10 +1,10 @@
 package tb_pkg;
 
-    class pulse_driver #(int DATA_WIDTH = 16);
+    class pulse_driver #(int DATA_WIDTH = 16, int FRACT_WIDTH = 14);
 
-        virtual axis_if #(.DATA_WIDTH(DATA_WIDTH)) vif;
+        virtual axis_if #(.DATA_WIDTH(DATA_WIDTH), .FRACT_WIDTH(FRACT_WIDTH)) vif;
 
-        function new(virtual axis_if #(DATA_WIDTH) vif);
+        function new(virtual axis_if #(DATA_WIDTH, FRACT_WIDTH) vif);
             this.vif = vif;
         endfunction
 
