@@ -26,7 +26,8 @@ always_ff @(posedge clk) begin : InputShift
 end
 
 // Coeff memory
-logic [2:0] coeff_addr;
+localparam ADDR_WIDTH  = $clog2((COEFF_NUM+1)/2);
+logic [ADDR_WIDTH-1:0] coeff_addr;
 logic signed [COEFF_WIDTH-1:0] coeff_from_mem;
 
 coeff_mem #(
@@ -54,7 +55,7 @@ typedef enum logic [1:0] {
 } state;
 
 state current_state, next_state;
-logic [2:0] cycle_cnt;
+logic [ADDR_WIDTH-1:0] cycle_cnt;
 
 always_ff @(posedge clk) begin : CycleCounter
     if (rst || current_state == IDLE) 
@@ -98,7 +99,7 @@ always_comb begin : PreAdder
     case(current_state)
         PAIRS: begin 
             pre_adder_comb = shift_reg[cycle_cnt] + shift_reg[(COEFF_NUM-1)-cycle_cnt];
-            coeff_addr = cycle_cnt[2:0];
+            coeff_addr = cycle_cnt;
         end
 
         CENTER: begin
@@ -135,6 +136,8 @@ always_ff @( posedge clk ) begin : MultiplyAccumulate
 end
 
 // Output piplining
+localparam NORM_SHIFT = s_axis.FRACT_WIDTH + (COEFF_WIDTH - 2) - m_axis.FRACT_WIDTH;
+
 logic [1:0] valid;
 
 always_ff @(posedge clk) begin
@@ -149,7 +152,7 @@ always_ff @(posedge clk) begin
         valid[1] <= valid[0];
     end
 
-    if(valid[1]) m_axis.data <= post_adder;
+    if(valid[1]) m_axis.data <= post_adder >>> NORM_SHIFT;
 end
 
 endmodule

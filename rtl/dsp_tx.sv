@@ -49,7 +49,7 @@ cic_filter #(
     .rst(rst),
 
     .s_axis(cic_if),
-    .m_axis(duc_if) //привести разрядность в норму, сейчас нет никакого округления и сдвига результата в итоге бурется только последние биты результата!!!!!!!
+    .m_axis(duc_if)
 );
 
 // Digital up conversion (bypassed)

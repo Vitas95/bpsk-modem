@@ -27,9 +27,9 @@ package bpsk_modem_pkg;
 
     // DSP parameters
     localparam FIR_COEFF_WIDTH = 16;
-    localparam logic [FIR_COEFF_WIDTH-1:0] FIR_COEFF [0:6] = '{
-    2, -12, -4, 26, 78, 128, 150
-    };
+    localparam logic signed [FIR_COEFF_WIDTH-1:0] FIR_COEFF [0:9] = '{
+    -105, 753, 369, -1050, -2478, -1978, 1758, 7997, 13938, 16384
+    }; // SRRC coefficients
     localparam FIR_COEFF_NUM = $size(FIR_COEFF, 1) * 2 - 1;
 
     localparam CIC_R = 20;  // Upsampling factor, must be greater than 2!

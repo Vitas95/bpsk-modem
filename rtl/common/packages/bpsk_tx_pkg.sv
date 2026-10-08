@@ -9,8 +9,8 @@ package bpsk_tx_pkg;
 // +--------+       +-----+       +-----+       +-----+
 localparam FIR_DATA_WIDTH  = 2;
 localparam FIR_FRACT_WIDTH = 0;
-localparam CIC_DATA_WIDTH  = 8;
-localparam CIC_FRACT_WIDTH = 6;
+localparam CIC_DATA_WIDTH  = 16;
+localparam CIC_FRACT_WIDTH = 14;
 localparam DUC_DATA_WIDTH  = 16;
 localparam DUC_FRACT_WIDTH = 14;
 

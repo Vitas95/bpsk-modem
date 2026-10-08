@@ -2,18 +2,16 @@ package bpsk_rx_pkg;
 
 // Fixed point parameters for all signed data interfaces between all DSP 
 // blocks in the receiver. 
-//        DDC_IF        CIC_IF       FIR_IF        SYNC_IF
-// +-----+  \/  +-----+  \/  +-----+  \/   +------+  \/   +----------+
-// | DDC | ====>| CIC | ====>| FIR | ====> | SYNC | ====> | Deframer |
-// +-----+      +-----+      +-----+       +------+       +----------+
+//        DDC_IF        CIC_IF       FIR_IF
+// +-----+  \/  +-----+  \/  +-----+  \/   +------+ 
+// | DDC | ====>| CIC | ====>| FIR | ====> | SYNC |
+// +-----+      +-----+      +-----+       +------+    
 localparam DDC_DATA_WIDTH  = 16;
 localparam DDC_FRACT_WIDTH = 14;
 localparam CIC_DATA_WIDTH  = 16;
 localparam CIC_FRACT_WIDTH = 14;
 localparam FIR_DATA_WIDTH  = 16;
-localparam FIR_FRACT_WIDTH = 14;
-localparam SYNC_DATA_WIDTH  = 16;
-localparam SYNC_FRACT_WIDTH = 14;
+localparam FIR_FRACT_WIDTH = 13; // FIR filter is gain an input signal. Fixed point was shifted. TODO: Temporary solution, return 14 fractional bits
 
 // Input control of the rx control
 typedef struct packed {
