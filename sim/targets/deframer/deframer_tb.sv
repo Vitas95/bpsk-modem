@@ -2,7 +2,7 @@ import bpsk_modem_pkg::*;
 
 module deframer_tb ();
 
-parameter   CLK_PERIOD = 10;   // 80 MHz clock
+parameter   CLK_PERIOD = 10;
 
 bit clk, rst, deframer_en, bist_en;
 always #(CLK_PERIOD/2) clk = ~clk;

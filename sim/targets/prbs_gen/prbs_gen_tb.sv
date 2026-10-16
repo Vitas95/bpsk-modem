@@ -1,7 +1,7 @@
 `timescale 1ps/1ps
 module prbs_gen_tb();
 
-parameter   CLK_PERIOD = 12.5;   // 80 MHz clock
+parameter   CLK_PERIOD = 10;
 
 bit clk, rst;
 always #(CLK_PERIOD/2) clk = ~clk;

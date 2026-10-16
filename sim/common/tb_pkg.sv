@@ -1,10 +1,12 @@
 package tb_pkg;
 
-    class pulse_driver #(int DATA_WIDTH = 16, int FRACT_WIDTH = 14);
+    class pulse_driver #(int DATA_WIDTH = 16, int FRACT_WIDTH = 14, int COMPLEX = 0);
 
-        virtual axis_if #(.DATA_WIDTH(DATA_WIDTH), .FRACT_WIDTH(FRACT_WIDTH)) vif;
+        virtual axis_if #(.DATA_WIDTH(DATA_WIDTH), 
+                          .FRACT_WIDTH(FRACT_WIDTH), 
+                          .COMPLEX(COMPLEX)) vif;
 
-        function new(virtual axis_if #(DATA_WIDTH, FRACT_WIDTH) vif);
+        function new(virtual axis_if #(DATA_WIDTH, FRACT_WIDTH, COMPLEX) vif);
             this.vif = vif;
         endfunction
 
@@ -17,6 +19,7 @@ package tb_pkg;
             int    fd;
             string line_str;
             int    sample_val;
+            logic [DATA_WIDTH-1:0] sample_fixed;
 
             fd = $fopen(filename, "r");
             if (fd == 0) begin
@@ -41,7 +44,11 @@ package tb_pkg;
             while ($fgets(line_str, fd)) begin
                 if ($sscanf(line_str, "%d", sample_val) == 1) begin
                     vif.valid <= 1;
-                    vif.data  <= sample_val;
+                    sample_fixed = sample_val;
+                    if (vif.COMPLEX) 
+                        vif.data  <= {sample_fixed,sample_fixed};
+                    else 
+                        vif.data  <= sample_fixed;
                     @(posedge clk);
 
                     vif.valid <= 0;

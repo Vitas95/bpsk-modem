@@ -4,7 +4,7 @@ module framer_tb();
 
 import bpsk_modem_pkg::*;
     
-parameter   CLK_PERIOD = 12.5;   // 80 MHz clock
+parameter   CLK_PERIOD = 10;
 
 bit clk, rst, packet_start;
 always #(CLK_PERIOD/2) clk = ~clk;
