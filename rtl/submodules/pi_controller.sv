@@ -25,7 +25,7 @@ end
 
 localparam COEFF_WIDTH = 16;
 localparam logic [COEFF_WIDTH-1:0] Ki = $floor(0.0005 * 2**(COEFF_WIDTH-1));
-localparam logic [COEFF_WIDTH-1:0] Kp = $floor(0.005 * 2**(COEFF_WIDTH-1));
+localparam logic [COEFF_WIDTH-1:0] Kp = $floor(0.008 * 2**(COEFF_WIDTH-1));
 
 // State mashine
 typedef enum logic [1:0] {

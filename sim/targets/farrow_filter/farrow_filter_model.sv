@@ -1,4 +1,4 @@
-// Bit-exact reference model of farrow_filter + horner_mac (used by farrow_filter_tb).
+// Bit-exact reference model of farrow_filter_fixed.sv + horner_mac (used by farrow_filter_tb).
 //
 // W           - DATA_WIDTH of one component (Re or Im)
 // CPLX        - 1: complex stream, Re and Im are processed by two identical,
@@ -65,7 +65,8 @@ package farrow_filter_model;
                 // DelaySeparation: runs once per input sample
                 nxt = (cnt + delay) & MASK;
                 if (nxt[DELAY_WIDTH-1]) begin
-                    mu  = ((HALF - cnt) << 1) & MASK;
+                    // mu from the newer sample of the interval: 2*counter - 1.0, 0 if negative
+                    mu  = ((2*cnt) >= HALF) ? ((2*cnt - HALF) & MASK) : 0;
                     cnt = (nxt - HALF) & MASK;
                 end else begin
                     cnt = nxt;

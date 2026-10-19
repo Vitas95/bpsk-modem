@@ -50,7 +50,9 @@ always_ff @(posedge clk) begin : DelaySeparation
         if (valid) begin
             if (calc_flag) begin
                 counter <= next_counter - 2**(DELAY_WIDTH-1);
-                mu      <= (2**(DELAY_WIDTH-1) - counter) <<< 1;
+                // mu is measured from the NEWER sample of the interval (c0 of the window is the newer one):
+                // mu = 1 - tau, tau = (1 - counter)/delay ~= 2*(1 - counter) near delay = 0.5
+                mu      <= ((counter <<< 1) >= 2**(DELAY_WIDTH-1)) ? ((counter <<< 1) - 2**(DELAY_WIDTH-1)) : '0;
             end else begin
                 counter <= next_counter;
             end
