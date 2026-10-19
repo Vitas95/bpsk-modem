@@ -1,3 +1,4 @@
+`include "axis_checks.svh"
 module farrow_cplx_wrap #(
     parameter DELAY_WIDTH   = 16
 ) (

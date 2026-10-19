@@ -2,7 +2,7 @@ set WildcardFilter [lsearch -not -all -inline $WildcardFilter Memory]
 
 # TB
 set obj pi_controller_tb
-add wave -group TB sim:/$obj/*
+add wave -group TB sim:/$obj/sys/*
 add wave -group TB sim:/$obj/data_in/*
 add wave -group TB sim:/$obj/data_out/*
 

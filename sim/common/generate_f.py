@@ -175,6 +175,9 @@ def strip_directive_lines(content: str) -> str:
 
 INCLUDE_RE = re.compile(r'^\s*`include\s+"([^"]+)"')
 IMPORT_RE = re.compile(r'\bimport\s+(\w+)::')
+# `virtual [interface] name` (e.g. a class holding a virtual axis_if) is a dependency on
+# that interface; it is not an instantiation, so extract_instances() cannot see it.
+VIRTUAL_RE = re.compile(r'\bvirtual\s+(?:interface\s+)?([a-zA-Z_]\w*)')
 # A package can also be used without an explicit `import pkg::*;` — simply
 # through scope resolution like `pkg::symbol` (e.g. in a port or type
 # declaration: `bpsk_tx_pkg::tx_state_t state`). IMPORT_RE doesn't catch
@@ -292,6 +295,10 @@ def parse_file_content(file_path: Path):
 
     for pkg in IMPORT_RE.findall(content):
         dependencies.add(pkg)
+
+    for vif in VIRTUAL_RE.findall(content):
+        if vif not in KEYWORDS:
+            dependencies.add(vif)
 
     # `include has already been collected above; for finding module
     # definitions, instances and package scope references, we strip

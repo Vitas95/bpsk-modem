@@ -118,7 +118,10 @@ always_ff @(posedge clk) begin
         m_axis.valid <= 0;
     end
 
-    if(current_state == VALID) m_axis.data <= post_adder >>> (COEFF_WIDTH-1);
+    if (rst)
+        m_axis.data <= '0;
+    else if (current_state == VALID) 
+        m_axis.data <= post_adder >>> (COEFF_WIDTH-1);
 end
 
 endmodule

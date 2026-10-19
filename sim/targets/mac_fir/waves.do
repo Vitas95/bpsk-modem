@@ -2,7 +2,7 @@ set WildcardFilter [lsearch -not -all -inline $WildcardFilter Memory]
 
 # TB
 set obj mac_fir_tb
-add wave -group TB sim:/$obj/*
+add wave -group TB sim:/$obj/sys/*
 
 # DUT
 set obj mac_fir_tb/dut

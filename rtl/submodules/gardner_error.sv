@@ -5,12 +5,12 @@ module gardner_error (
     input logic rst,
 
     axis_if.slave s_axis,
-    //axis_if.master m_axis_data, // TODO Output the recovered symbol
+    axis_if.master m_axis_data,
     axis_if.master m_axis_error
 );
 
 `CHECK_COMPLEX_FIELD(s_axis, 1)
-//`CHECK_COMPLEX_FIELD(m_axis_data, 1)
+`CHECK_COMPLEX_FIELD(m_axis_data, 1)
 
 // Input pipline
 logic valid;
@@ -33,8 +33,12 @@ typedef struct packed {
 complex shift_reg [0:2];
 
 always_ff @(posedge clk) begin : ShiftReg
-    if (valid) begin
-        for (int i = 0; i < 4; i++) begin
+    if (rst) begin
+        for (int i = 0; i < 3; i++) begin
+            shift_reg[i] <= '0;
+        end
+    end else if (valid) begin
+        for (int i = 0; i < 3; i++) begin
             if (i == 0) shift_reg[0] <= s_axis.data;
             else        shift_reg[i] <= shift_reg[i-1];
         end
@@ -151,7 +155,13 @@ always_ff @(posedge clk) begin
         m_axis_error.valid <= 0;
     end
 
-    if(current_state == VALID) m_axis_error.data <= post_adder;
+    if (rst)
+        m_axis_error.data <= '0;
+    else if (current_state == VALID) 
+        m_axis_error.data <= post_adder >>> s_axis.FRACT_WIDTH;
 end
+
+assign m_axis_data.data = shift_reg[0];
+assign m_axis_data.valid = calc_flag_posedge;
 
 endmodule

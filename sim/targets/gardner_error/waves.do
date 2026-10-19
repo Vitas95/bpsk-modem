@@ -2,8 +2,9 @@ set WildcardFilter [lsearch -not -all -inline $WildcardFilter Memory]
 
 # TB
 set obj gardner_error_tb
-add wave -group TB sim:/$obj/*
+add wave -group TB sim:/$obj/sys/*
 add wave -group TB sim:/$obj/data_in/*
+add wave -group TB sim:/$obj/data_out/*
 add wave -group TB sim:/$obj/error_out/*
 
 # DUT

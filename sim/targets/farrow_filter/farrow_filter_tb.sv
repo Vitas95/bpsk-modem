@@ -2,27 +2,23 @@
 module farrow_filter_tb ();
 
 import tb_pkg::*;
+import farrow_filter_model::*;
 
-// Simulation parameters
-parameter   CLK_PERIOD = 10; 
-parameter   DELAY_WIDTH = 16;
+parameter DELAY_WIDTH = 16;
+localparam DELAY = 256; // Some dalay calculated with an error loop.
 
-axis_if #(.DATA_WIDTH(16), .FRACT_WIDTH(14), .COMPLEX(0)) data_in();
-axis_if #(.DATA_WIDTH(16), .FRACT_WIDTH(14), .COMPLEX(0)) data_out();
-
-pulse_driver #(16, 14, 0) drv_a = new(data_in);
-
-bit clk, rst;
-always #(CLK_PERIOD/2) clk = ~clk;
+tb_clk_if sys();
+axis_if #(.DATA_WIDTH(16), .FRACT_WIDTH(14), .COMPLEX(1)) data_in();
+axis_if #(.DATA_WIDTH(16), .FRACT_WIDTH(14), .COMPLEX(1)) data_out();
 
 logic [DELAY_WIDTH-1:0] delay_in;
-assign delay_in = 16384+256; // Unsigned 0.5 with some dalay calculated with an error loop.
+assign delay_in = DELAY;
 
-farrow_filter #(
+farrow_cplx_wrap #(
     .DELAY_WIDTH(DELAY_WIDTH)
 ) dut (
-    .clk(clk),
-    .rst(rst),
+    .clk(sys.clk),
+    .rst(sys.rst),
 
     .s_axis(data_in),
     .delay_in(delay_in),
@@ -30,16 +26,9 @@ farrow_filter #(
     .m_axis(data_out)
 );
 
-initial begin
-clk <= 0;
-rst <= 1;
-data_in.valid <= 0;
-data_in.data <= 0;
-#(3*CLK_PERIOD);
-rst <= 0;
-@(posedge clk);
-drv_a.apply_pulse_from_file (clk, "../test_data.txt", 20, 0);
-$stop;
-end
+farrow_model #(16, 1, DELAY_WIDTH) model = new(DELAY, 1);   // (delay_in, correction_en_in)
+axis_env #(16, 14, 1, 16, 14, 1) env = new(sys, data_in, data_out, model);
+
+initial env.run("../farrow_test_data.txt", 20);
 
 endmodule

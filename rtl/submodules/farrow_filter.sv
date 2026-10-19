@@ -24,7 +24,7 @@ always_ff @(posedge clk) begin : InPipeline
         correction_en <= correction_en_in;
     end
 
-    if  (correction_en) delay <= delay_in;
+    if  (correction_en) delay <= delay_in + 2**(DELAY_WIDTH-2);
     else                delay <= 2**(DELAY_WIDTH-2);
 end
 
@@ -65,13 +65,19 @@ localparam DATA_WIDTH = s_axis.DATA_WIDTH;
 logic signed [DATA_WIDTH+4:0] shift_reg [0:3];
 
 always_ff @(posedge clk) begin : ShiftReg
-    if (valid) begin
+    if (rst) begin
         for (int i = 0; i < 4; i++) begin
-            if (i == 0) shift_reg[0] <= $signed(s_axis.data);
-            else        shift_reg[i] <= shift_reg[i-1];
+            shift_reg[i] <= '0;
         end
-    end else begin
-        shift_reg <= shift_reg;
+    end else begin 
+        if (valid) begin
+            for (int i = 0; i < 4; i++) begin
+                if (i == 0) shift_reg[0] <= $signed(s_axis.data);
+                else        shift_reg[i] <= shift_reg[i-1];
+            end
+        end else begin
+            shift_reg <= shift_reg;
+        end
     end
 end
 
