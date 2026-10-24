@@ -159,9 +159,18 @@ always_ff @(posedge clk) begin
         m_axis_error.data <= '0;
     else if (current_state == VALID) 
         m_axis_error.data <= post_adder >>> s_axis.FRACT_WIDTH;
+
+    if (rst)
+        m_axis_data.valid <= 0;
+    else if (calc_flag_posedge) begin
+        m_axis_data.data  <= shift_reg[0];
+        m_axis_data.valid <= 1;
+    end else 
+        m_axis_data.valid <= 0;
+
 end
 
-assign m_axis_data.data = shift_reg[0];
-assign m_axis_data.valid = calc_flag_posedge;
+
+
 
 endmodule

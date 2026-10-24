@@ -52,13 +52,15 @@ cic_filter #(
     .m_axis(duc_if)
 );
 
-// Digital up conversion (bypassed)
-axis_fp_cast #(
-    .REGISTERED(1)
-) duc_bypass_inst (
+// Digital up conversion
+digital_converter #(
+    .EXP_WIDTH(15),
+    .PHASE_WIDTH(16),
+    .DOWN_CONVERSION(0)
+) dut_1 (
     .clk(clk),
     .rst(rst),
- 
+
     .s_axis(duc_if),
     .m_axis(m_axis)
 );

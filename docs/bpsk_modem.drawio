@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net">
   <diagram name="Modem_core" id="EPpCnQF4RL-DPNu-NEga">
-    <mxGraphModel dx="2531" dy="1019" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="2241" dy="846" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" style="locked=1;" value="Модули" />
@@ -10,7 +10,7 @@
         <mxCell id="_07YdNo6qQA3FtlpvEmn-17" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=16;fontStyle=1" value="bpsk_modem_core" vertex="1">
           <mxGeometry height="30" width="150" x="-230" y="50" as="geometry" />
         </mxCell>
-        <mxCell id="JL-pD_Nnb8Gwt9By3obh-1" parent="0" style="locked=0;" value="Легенда" />
+        <mxCell id="JL-pD_Nnb8Gwt9By3obh-1" parent="0" style="locked=1;" value="Легенда" />
         <mxCell id="JL-pD_Nnb8Gwt9By3obh-2" parent="JL-pD_Nnb8Gwt9By3obh-1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;" value="Sr: - sample rate relation to clock" vertex="1">
           <mxGeometry height="30" width="200" x="-230" y="740" as="geometry" />
         </mxCell>
@@ -113,7 +113,7 @@
         <mxCell id="JL-pD_Nnb8Gwt9By3obh-289" parent="JL-pD_Nnb8Gwt9By3obh-20" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;div style=&quot;text-align: left;&quot;&gt;Bit&lt;/div&gt;" vertex="1">
           <mxGeometry height="30" width="59" x="-171" y="530" as="geometry" />
         </mxCell>
-        <mxCell id="JL-pD_Nnb8Gwt9By3obh-144" parent="0" style="locked=1;" value="Блоки" />
+        <mxCell id="JL-pD_Nnb8Gwt9By3obh-144" parent="0" style="locked=0;" value="Блоки" />
         <mxCell id="JL-pD_Nnb8Gwt9By3obh-150" edge="1" parent="JL-pD_Nnb8Gwt9By3obh-144" style="shape=flexArrow;endArrow=classic;html=1;rounded=0;fontSize=12;startSize=8;endSize=11;curved=1;endWidth=25;width=18;" value="">
           <mxGeometry height="50" relative="1" width="50" as="geometry">
             <mxPoint x="950" y="179.5" as="sourcePoint" />
@@ -358,7 +358,7 @@
           <mxGeometry height="30" width="59" x="230" y="530" as="geometry" />
         </mxCell>
         <mxCell id="JL-pD_Nnb8Gwt9By3obh-227" parent="JL-pD_Nnb8Gwt9By3obh-144" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="DSP:2" vertex="1">
-          <mxGeometry height="30" width="60" x="710" y="430" as="geometry" />
+          <mxGeometry height="30" width="60" x="710" y="205" as="geometry" />
         </mxCell>
         <mxCell id="JL-pD_Nnb8Gwt9By3obh-228" parent="JL-pD_Nnb8Gwt9By3obh-144" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="DSP:1" vertex="1">
           <mxGeometry height="30" width="60" x="255" y="390" as="geometry" />
@@ -512,6 +512,9 @@
         </mxCell>
         <mxCell id="JL-pD_Nnb8Gwt9By3obh-311" parent="JL-pD_Nnb8Gwt9By3obh-144" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;fontColor=#000000;darkOpacity=0.05;fillColor=#FFF9B2;strokeColor=none;fillStyle=solid;direction=west;gradientDirection=north;gradientColor=#FFF2A1;shadow=1;size=20;autosizeText=1;fontSize=11;" value="Baseband loopback" vertex="1">
           <mxGeometry height="50" width="59" x="-55" y="645" as="geometry" />
+        </mxCell>
+        <mxCell id="mddt-aYxgXi04VO0NmrX-1" parent="JL-pD_Nnb8Gwt9By3obh-144" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="DSP:2" vertex="1">
+          <mxGeometry height="30" width="60" x="710" y="425" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>

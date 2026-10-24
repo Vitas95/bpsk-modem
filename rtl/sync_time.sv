@@ -4,14 +4,16 @@ module sync_time (
     input logic rst,
 
     axis_if.slave s_axis,
-    axis_if.master m_axis
+    axis_if.master m_axis,
+
+    output logic locked
 );
 
 `CHECK_COMPLEX_FIELD(s_axis, 1)
 `CHECK_COMPLEX_FIELD(m_axis, 1)
 
-axis_if #(.DATA_WIDTH(16), .FRACT_WIDTH(14))             error();           // gardner_error -> pi_controller
-axis_if #(.DATA_WIDTH(16), .FRACT_WIDTH(14))             error_filtered();  // pi_controller -> farrow_filter
+axis_if #(.DATA_WIDTH(16), .FRACT_WIDTH(14))              error();           // gardner_error -> pi_controller
+axis_if #(.DATA_WIDTH(16), .FRACT_WIDTH(14))              error_filtered();  // pi_controller -> farrow_filter
 axis_if #(.DATA_WIDTH(16), .FRACT_WIDTH(14), .COMPLEX(1)) data_filtered();   // farrow_filter -> gardner_error
 
 gardner_error gardner_error_inst (
@@ -29,6 +31,18 @@ pi_controller pi_controller_inst (
 
     .s_axis(error),
     .m_axis(error_filtered)
+);
+
+lock_detector #(
+    .UNLOCK_THOLD(32),
+    .UNLOCK_CNT(16),
+    .LOCK_THOLD(16),
+    .LOCK_CNT(8)
+) lock_detector_inst (
+    .clk(clk),
+    .rst(rst),
+    .s_axis_error(error_filtered),
+    .locked(locked)
 );
 
 farrow_cplx_wrap #(

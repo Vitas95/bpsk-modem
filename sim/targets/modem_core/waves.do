@@ -28,9 +28,12 @@ add wave -group DSP_IF_TX sim:/$obj/dsp_tx_inst/fir_if/*
 add wave -group DSP_IF_TX sim:/$obj/dsp_tx_inst/cic_if/*
 add wave -group DSP_IF_TX sim:/$obj/dsp_tx_inst/duc_if/*
 add wave -group DSP_IF_TX sim:/$obj/dsp_tx_inst/m_axis/*
+
+add wave -group DSP_IF_RX sim:/$obj/dsp_rx_inst/*
 add wave -group DSP_IF_RX sim:/$obj/dsp_rx_inst/ddc_if/*
 add wave -group DSP_IF_RX sim:/$obj/dsp_rx_inst/cic_if/*
 add wave -group DSP_IF_RX sim:/$obj/dsp_rx_inst/fir_if/*
+add wave -group DSP_IF_RX sim:/$obj/dsp_rx_inst/m_axis/*
 
 # CIC 
 set obj modem_core_tb/dut/dsp_tx_inst/up_cic_filter_inst/g_interpolator

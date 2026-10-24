@@ -12,6 +12,12 @@ add wave -group DUT sim:/$obj/*
 add wave -group DUT sim:/$obj/error/*
 add wave -group DUT sim:/$obj/error_filtered/*
 add wave -group DUT sim:/$obj/data_filtered/*
+add wave -group DUT sim:/$obj/m_axis/*
+
+
+# LOCK_DETECT
+set obj sync_time_tb/dut/lock_detector_inst
+add wave -group LOCK_DETECT sim:/$obj/*
 
 # FARROW
 set obj sync_time_tb/dut/farrow_filter_inst/farrow_filter_i

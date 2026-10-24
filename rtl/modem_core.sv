@@ -54,8 +54,9 @@ axis_if #(.DATA_WIDTH(DAC_ADC_DATA_WIDTH),
           .FRACT_WIDTH(DAC_ADC_DATA_WIDTH-2))   tx_dsp();         // dsp_tx -> DAC
 axis_if #(.DATA_WIDTH(DAC_ADC_DATA_WIDTH),
           .FRACT_WIDTH(DAC_ADC_DATA_WIDTH-2))   tx_dsp_test();    // dsp_tx_test
-axis_if #(.DATA_WIDTH(DAC_ADC_DATA_WIDTH),
-          .FRACT_WIDTH(DAC_ADC_DATA_WIDTH-2))   rx_dsp_test();    // dsp_rx_test
+axis_if #(.DATA_WIDTH(16),
+          .FRACT_WIDTH(14),
+          .COMPLEX(1))                          rx_dsp_test();    // dsp_rx_test
 axis_if #(.DATA_WIDTH(DAC_ADC_DATA_WIDTH),
           .FRACT_WIDTH(DAC_ADC_DATA_WIDTH-2))   rx_dsp();         // ADC -> dsp_rx  
 axis_if #(.DATA_WIDTH(DAC_ADC_DATA_WIDTH),

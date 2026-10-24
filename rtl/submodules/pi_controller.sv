@@ -71,9 +71,9 @@ always_ff @(posedge clk) begin : SM
 end
 
 // Multiplier behavioral single DSP48A1
-logic signed [17:0] a, a_reg, b, b_reg;
+(* use_dsp = "yes" *) logic signed [17:0] a, a_reg, b, b_reg;
 (* use_dsp = "yes" *) logic signed [47:0] mult;
-logic signed [47:0] post_adder, c;
+(* use_dsp = "yes" *) logic signed [47:0] post_adder, c;
 logic signed [47:0] integrator;
 
 always_comb begin

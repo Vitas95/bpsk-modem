@@ -37,7 +37,7 @@ package bpsk_modem_pkg;
     localparam CIC_D = 1;   // Differential delay
 
      // Timing constants
-    localparam BIST_INTERPACKET_GAP = 1024; // Interval between two packets in BIST mode.
+    localparam BIST_INTERPACKET_GAP = 4096; // Interval between two packets in BIST mode.
     localparam BIST_WATCHDOG_LIMIT = (BIST_INTERPACKET_GAP + SYNC_LEN + 13 + HEADER_LEN) * CIC_R; // Clk cycles without pkt_rcvd before sync_lost in the BIST mode
 
     // Loopback states
