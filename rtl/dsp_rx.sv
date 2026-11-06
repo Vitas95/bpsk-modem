@@ -14,13 +14,15 @@ import bpsk_rx_pkg::*;
 axis_if #(.DATA_WIDTH(DDC_DATA_WIDTH), .FRACT_WIDTH(DDC_FRACT_WIDTH), .COMPLEX(1)) ddc_if(); // ddc -> cic
 axis_if #(.DATA_WIDTH(CIC_DATA_WIDTH), .FRACT_WIDTH(CIC_FRACT_WIDTH), .COMPLEX(1)) cic_if(); // cic -> fir
 axis_if #(.DATA_WIDTH(FIR_DATA_WIDTH), .FRACT_WIDTH(FIR_FRACT_WIDTH), .COMPLEX(1)) fir_if(); // fir -> sync
+axis_if #(.DATA_WIDTH(FIR_DATA_WIDTH), .FRACT_WIDTH(FIR_FRACT_WIDTH))              mag_if(); // estimated magnitude
+axis_if #(.DATA_WIDTH(FIR_DATA_WIDTH), .FRACT_WIDTH(FIR_FRACT_WIDTH))              phase_if(); // estimated phase
 
 // Digital down conversion
 digital_converter #(
     .EXP_WIDTH(15),
     .PHASE_WIDTH(16),
     .DOWN_CONVERSION(1)
-) dut_1 (
+) digital_converter_inst (
     .clk(clk),
     .rst(rst),
 
@@ -54,17 +56,6 @@ fir_cplx_wrap #(
     .m_axis(fir_if)
 );
 
-// Syncronization (bypassed)
-// axis_fp_cast #(
-//     .REGISTERED(1)
-// ) sync_bypass_inst (
-//     .clk(clk),
-//     .rst(rst),
- 
-//     .s_axis(fir_if),
-//     .m_axis(m_axis)
-// );
-
 sync_time sync_time_inst(
     .clk(clk),
     .rst(rst),
@@ -73,6 +64,18 @@ sync_time sync_time_inst(
     .m_axis(m_axis),
 
     .locked(locked)
+);
+
+mag_phase_estimator #(
+    .PHASE_WIDTH(16),
+    .STAGES(14)
+) mag_phase_estimator_inst (
+    .clk(clk),
+    .rst(rst),
+
+    .s_axis(m_axis),
+    .m_axis_phase(phase_if),
+    .m_axis_mag(mag_if)
 );
 
 endmodule

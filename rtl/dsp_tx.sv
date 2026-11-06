@@ -57,7 +57,7 @@ digital_converter #(
     .EXP_WIDTH(15),
     .PHASE_WIDTH(16),
     .DOWN_CONVERSION(0)
-) dut_1 (
+) digital_converter_inst (
     .clk(clk),
     .rst(rst),
 

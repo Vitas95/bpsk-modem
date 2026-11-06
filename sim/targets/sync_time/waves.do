@@ -19,9 +19,17 @@ add wave -group DUT sim:/$obj/m_axis/*
 set obj sync_time_tb/dut/lock_detector_inst
 add wave -group LOCK_DETECT sim:/$obj/*
 
-# FARROW
+# FARROW_I
 set obj sync_time_tb/dut/farrow_filter_inst/farrow_filter_i
-add wave -group FARROW sim:/$obj/*
+add wave -group FARROW_I sim:/$obj/*
+add wave -group FARROW_I sim:/$obj/s_axis/*
+add wave -group FARROW_I sim:/$obj/m_axis/*
+
+# FARROW_Q
+set obj sync_time_tb/dut/farrow_filter_inst/farrow_filter_i
+add wave -group FARROW_Q sim:/$obj/*
+add wave -group FARROW_Q sim:/$obj/s_axis/*
+add wave -group FARROW_Q sim:/$obj/m_axis/*
 
 # GARDNER
 set obj sync_time_tb/dut/gardner_error_inst

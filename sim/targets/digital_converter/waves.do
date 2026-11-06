@@ -16,6 +16,10 @@ add wave -group DUT_DOWN sim:/$obj/*
 add wave -group DUT_DOWN sim:/$obj/s_axis/*
 add wave -group DUT_DOWN sim:/$obj/m_axis/*
 
+# EXP_GEN
+set obj digital_converter_tb/dut_0/exp_lut_inst
+add wave -group EXP_GEN sim:/$obj/*
+
 configure wave -signalnamewidth 1
 configure wave -namecolwidth 300
 configure wave -valuecolwidth 100

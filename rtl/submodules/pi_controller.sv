@@ -1,12 +1,26 @@
-module pi_controller (
+module pi_controller #(
+    parameter COEFF_WIDTH
+)(
     input logic clk,
     input logic rst,
+
+    input logic [COEFF_WIDTH-1:0] Ki,
+    input logic [COEFF_WIDTH-1:0] Kp,
 
     axis_if.slave s_axis,
     axis_if.master m_axis
 );
 
-// Input pipline
+////////////
+// Checks //
+////////////
+if (COEFF_WIDTH > 17) begin : CoefficientsWidthCheck
+    $error("pi_controller: COEFF_WIDTH must be <= 17 (unsigned coefficient + sign bit for DSP48A1)");
+end
+
+///////////////////
+// Input pipline //
+///////////////////
 logic valid;
 
 always_ff @(posedge clk) begin : InPipeline
@@ -17,17 +31,9 @@ always_ff @(posedge clk) begin : InPipeline
     end
 end
 
-// PI filter perform a basic filtration of the input error into a 
-// control signal with a next few formulas:
-// integral     = integral + Ki * error
-// proportional = Kp * error
-// filter_out   = proportional + integral
-
-localparam COEFF_WIDTH = 16;
-localparam logic [COEFF_WIDTH-1:0] Ki = $floor(0.0005 * 2**(COEFF_WIDTH-1));
-localparam logic [COEFF_WIDTH-1:0] Kp = $floor(0.008 * 2**(COEFF_WIDTH-1));
-
-// State mashine
+///////////////////
+// State mashine //
+///////////////////
 typedef enum logic [1:0] {
     IDLE,
     CALC,
@@ -70,7 +76,9 @@ always_ff @(posedge clk) begin : SM
     else     current_state <= next_state;
 end
 
-// Multiplier behavioral single DSP48A1
+/////////////////////////////////
+// Single DSP48A1 (behavioral) //
+/////////////////////////////////
 (* use_dsp = "yes" *) logic signed [17:0] a, a_reg, b, b_reg;
 (* use_dsp = "yes" *) logic signed [47:0] mult;
 (* use_dsp = "yes" *) logic signed [47:0] post_adder, c;
@@ -78,9 +86,9 @@ logic signed [47:0] integrator;
 
 always_comb begin
     case(calculation_counter)
-    2'b00:   b = $signed(Ki);
-    2'b01:   b = $signed(Kp);
-    default: b = $signed(Ki);
+    2'b00:   b = signed'(18'(Ki));
+    2'b01:   b = signed'(18'(Kp));
+    default: b = signed'(18'(Ki));
     endcase
 end
 
@@ -110,7 +118,9 @@ always_ff @( posedge clk ) begin : MultiplyAccumulate
     else            post_adder <= mult;
 end
 
-// Output piplining
+//////////////////////
+// Output piplining //
+//////////////////////
 always_ff @(posedge clk) begin
     if (current_state == VALID) begin
         m_axis.valid <= 1;

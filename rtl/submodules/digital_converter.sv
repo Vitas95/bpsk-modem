@@ -11,13 +11,22 @@ module digital_converter #(
 );
 
 // Sine and cosine have only a fractional part and a sign as a MSB
+// delta_phi = int(F_out / F_clk * 2**16)
+// delta_phi = int(10e6 / 80e6 * 65536) = 8192
+// So initial frequency is 10 MHz.
+// Maximum frequency - 30 MHz, minimum - 0.15625 MHz.
+logic [PHASE_WIDTH-1:0] phase_inc;
+assign phase_inc = 16'd8192;
+
 logic signed [EXP_WIDTH - 1 : 0] sin_out, cos_out;
 exp_lut #(            
     .EXP_WIDTH(EXP_WIDTH),   
     .PHASE_WIDTH(PHASE_WIDTH)
 ) exp_lut_inst (      
     .clk(clk),        
-    .rst(rst),        
+    .rst(rst),
+    .phase_inc(phase_inc),
+    .enable(1),  
     .sin_out(sin_out),    
     .cos_out(cos_out)     
 );
@@ -26,10 +35,8 @@ exp_lut #(
 generate
     if (DOWN_CONVERSION == 1) begin 
 
-        (* use_dsp = "yes" *) // REWRITE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         logic signed [17:0] dsp_a_0, dsp_b_0, dsp_a_1, dsp_b_1;
-        logic signed [47:0] dsp_p_0, dsp_p_1;
-
+        (* use_dsp = "yes" *) logic signed [47:0] dsp_p_0, dsp_p_1;
         logic signed [m_axis.DATA_WIDTH-1:0] real_out, imag_out;
 
         // Module after ADC with a real output and a complex output
@@ -59,9 +66,9 @@ generate
 
     end else if ((DOWN_CONVERSION == 0) && s_axis.COMPLEX) begin
         // Module before DAC with a complex input and a real output
-        (* use_dsp = "yes" *) 
+        
         logic signed [17:0] dsp_a_0, dsp_b_0, dsp_a_1, dsp_b_1;
-        logic signed [47:0] dsp_p_0, dsp_p_1;
+        (* use_dsp = "yes" *) logic signed [47:0] dsp_p_0, dsp_p_1;
         logic signed [47:0] post_adder;
 
         localparam DATA_W = s_axis.DATA_WIDTH;
@@ -92,9 +99,9 @@ generate
 
     end else begin 
         // Module before DAC with a real input and a real output
-        (* use_dsp = "yes" *) 
+        
         logic signed [17:0] dsp_a_0, dsp_b_0;
-        logic signed [47:0] dsp_p_0;
+        (* use_dsp = "yes" *) logic signed [47:0] dsp_p_0;
 
         localparam SHIFT = s_axis.FRACT_WIDTH + (EXP_WIDTH-1) - m_axis.FRACT_WIDTH;
 
